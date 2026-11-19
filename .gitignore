@@ -1,0 +1,23 @@
+# OS and editors
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# Secrets (never commit real values; use .env.example)
+.env
+.env.*
+!.env.example
+
+# Word temp files
+~$*.docx
+
+# Web app (apps/web)
+apps/web/node_modules/
+apps/web/dist/
+
+# API app (apps/api) - Laravel keeps its own .gitignore too
+apps/api/vendor/
+apps/api/node_modules/
