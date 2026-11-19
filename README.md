@@ -20,14 +20,7 @@ Coursework project for Advanced Full Stack Development.
 ```
 apps/web    React + TypeScript single-page app
 apps/api    Laravel REST API
-docs/       PRD, design document, decision records, progress
 ```
-
-## Documents
-
-- Product requirements: [docs/product/prd.md](docs/product/prd.md)
-- Design document: [docs/architecture/design.md](docs/architecture/design.md)
-- Decision records: [docs/decisions/](docs/decisions/)
 
 ## Running locally
 

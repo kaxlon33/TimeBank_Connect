@@ -21,3 +21,6 @@ apps/web/dist/
 # API app (apps/api) - Laravel keeps its own .gitignore too
 apps/api/vendor/
 apps/api/node_modules/
+
+# Planning documents stay local (not pushed to GitHub)
+docs/
