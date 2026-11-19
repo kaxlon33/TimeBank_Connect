@@ -1,0 +1,20 @@
+[
+  { "code": "AU", "name": "Australia", "flag_url": "https://flagcdn.com/au.svg", "region": "Oceania", "calling_code": "+61" },
+  { "code": "CA", "name": "Canada", "flag_url": "https://flagcdn.com/ca.svg", "region": "Americas", "calling_code": "+1" },
+  { "code": "CN", "name": "China", "flag_url": "https://flagcdn.com/cn.svg", "region": "Asia", "calling_code": "+86" },
+  { "code": "DE", "name": "Germany", "flag_url": "https://flagcdn.com/de.svg", "region": "Europe", "calling_code": "+49" },
+  { "code": "FR", "name": "France", "flag_url": "https://flagcdn.com/fr.svg", "region": "Europe", "calling_code": "+33" },
+  { "code": "GB", "name": "United Kingdom", "flag_url": "https://flagcdn.com/gb.svg", "region": "Europe", "calling_code": "+44" },
+  { "code": "ID", "name": "Indonesia", "flag_url": "https://flagcdn.com/id.svg", "region": "Asia", "calling_code": "+62" },
+  { "code": "IE", "name": "Ireland", "flag_url": "https://flagcdn.com/ie.svg", "region": "Europe", "calling_code": "+353" },
+  { "code": "IN", "name": "India", "flag_url": "https://flagcdn.com/in.svg", "region": "Asia", "calling_code": "+91" },
+  { "code": "JP", "name": "Japan", "flag_url": "https://flagcdn.com/jp.svg", "region": "Asia", "calling_code": "+81" },
+  { "code": "MM", "name": "Myanmar", "flag_url": "https://flagcdn.com/mm.svg", "region": "Asia", "calling_code": "+95" },
+  { "code": "MY", "name": "Malaysia", "flag_url": "https://flagcdn.com/my.svg", "region": "Asia", "calling_code": "+60" },
+  { "code": "NZ", "name": "New Zealand", "flag_url": "https://flagcdn.com/nz.svg", "region": "Oceania", "calling_code": "+64" },
+  { "code": "PH", "name": "Philippines", "flag_url": "https://flagcdn.com/ph.svg", "region": "Asia", "calling_code": "+63" },
+  { "code": "SG", "name": "Singapore", "flag_url": "https://flagcdn.com/sg.svg", "region": "Asia", "calling_code": "+65" },
+  { "code": "TH", "name": "Thailand", "flag_url": "https://flagcdn.com/th.svg", "region": "Asia", "calling_code": "+66" },
+  { "code": "US", "name": "United States", "flag_url": "https://flagcdn.com/us.svg", "region": "Americas", "calling_code": "+1" },
+  { "code": "VN", "name": "Vietnam", "flag_url": "https://flagcdn.com/vn.svg", "region": "Asia", "calling_code": "+84" }
+]

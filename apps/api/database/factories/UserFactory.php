@@ -2,6 +2,8 @@
 
 namespace Database\Factories;
 
+use App\Enums\UserRole;
+use App\Enums\UserStatus;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
@@ -40,6 +42,23 @@ class UserFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'email_verified_at' => null,
+        ]);
+    }
+
+    /** Factories bypass $fillable, so role/status can be set here for tests. */
+    public function admin(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'role' => UserRole::Admin,
+        ]);
+    }
+
+    public function suspended(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'status' => UserStatus::Suspended,
+            'suspended_reason' => 'Suspended in a test.',
+            'suspended_at' => now(),
         ]);
     }
 }
