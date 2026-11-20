@@ -65,7 +65,7 @@ function ActionButton({
       disabled={disabled}
       className={cn(
         'press flex h-14 w-full shrink-0 items-center justify-center gap-2 rounded-2xl px-6 text-[15px] font-bold whitespace-nowrap transition-colors disabled:opacity-60 sm:w-auto',
-        tone === 'primary' ? 'bg-wine-700 text-wine-on hover:bg-wine-600 sm:min-w-52' : 'border bg-card hover:bg-secondary',
+        tone === 'primary' ? 'bg-brass text-wine-900 hover:bg-brass/90 sm:min-w-52' : 'border border-white/30 bg-white/10 text-white hover:bg-white/20',
       )}
     >
       {busy ? <Loader2 className="size-[18px] animate-spin" aria-hidden="true" /> : icon}
@@ -167,32 +167,47 @@ export function RequestDetail({ request: r, box, balance, busy, error, onAction,
         </div>
       </div>
 
-      <div className="grid gap-8 p-5 sm:p-8 lg:grid-cols-[minmax(0,1fr)_250px]">
-        <div className="space-y-6">
-          <div className="flex flex-wrap items-end gap-x-8 gap-y-3">
-            <p className="flex items-baseline gap-2">
-              <span className="numeral text-[84px] text-wine-700">{formatCredits(r.hours)}</span>
-              <span className="font-heading text-xl font-semibold text-muted-foreground">{r.hours === 1 ? 'hour' : 'hours'}</span>
-            </p>
-            <ul className="space-y-2 pb-2 text-sm font-semibold">
-              <li className="flex items-center gap-2.5">
-                <CalendarDays className="size-[18px] text-muted-foreground" aria-hidden="true" />
+      <div className="grid gap-6 p-5 sm:p-8 lg:grid-cols-[minmax(0,1fr)_260px]">
+        <div className="space-y-5">
+          <dl className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <div className="rounded-2xl bg-primary-soft p-4">
+              <dt className="flex items-center gap-1.5 text-[11px] font-bold tracking-[0.1em] text-wine-700 uppercase">
+                <Clock className="size-3.5" aria-hidden="true" />
+                Length
+              </dt>
+              <dd className="mt-2 flex items-baseline gap-1.5">
+                <span className="numeral text-[44px] text-wine-700">{formatCredits(r.hours)}</span>
+                <span className="text-sm font-bold text-wine-700">{r.hours === 1 ? 'hour' : 'hours'}</span>
+              </dd>
+            </div>
+            <div className="rounded-2xl bg-muted p-4">
+              <dt className="flex items-center gap-1.5 text-[11px] font-bold tracking-[0.1em] text-muted-foreground uppercase">
+                <CalendarDays className="size-3.5" aria-hidden="true" />
+                When
+              </dt>
+              <dd className="mt-2 text-[15px] leading-snug font-bold">
                 {r.proposed_at
                   ? new Date(r.proposed_at).toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
                   : 'Time to be agreed'}
-              </li>
-              <li className="flex items-center gap-2.5">
-                <MapPin className="size-[18px] text-muted-foreground" aria-hidden="true" />
-                {other.area ? `${other.name} · ${other.area.name}` : other.name}
-              </li>
-            </ul>
-          </div>
+              </dd>
+            </div>
+            <div className="rounded-2xl bg-muted p-4">
+              <dt className="flex items-center gap-1.5 text-[11px] font-bold tracking-[0.1em] text-muted-foreground uppercase">
+                <MapPin className="size-3.5" aria-hidden="true" />
+                {box === 'received' ? 'Requested by' : 'Helper'}
+              </dt>
+              <dd className="mt-2 text-[15px] leading-snug font-bold">
+                {other.name}
+                {other.area ? <span className="block text-[13px] font-medium text-muted-foreground">{other.area.name}</span> : null}
+              </dd>
+            </div>
+          </dl>
 
           <div className="flex items-start gap-3">
             <Avatar name={r.requester.name} src={r.requester.avatar_url} size={40} />
             <p
               className={cn(
-                'max-w-xl rounded-2xl rounded-tl-md border bg-muted px-5 py-4 text-[15px] leading-relaxed',
+                'flex-1 rounded-2xl rounded-tl-md border bg-card px-5 py-4 text-[15px] leading-relaxed',
                 !r.message && 'text-muted-foreground italic',
               )}
             >
@@ -201,7 +216,7 @@ export function RequestDetail({ request: r, box, balance, busy, error, onAction,
           </div>
         </div>
 
-        <div>
+        <div className="rounded-2xl bg-muted p-5">
           <p className="mb-4 text-[11px] font-bold tracking-[0.1em] text-muted-foreground uppercase">Progress</p>
           {closed ? (
             <div className="rounded-2xl bg-status-declined-bg p-4 text-sm font-semibold text-status-declined">
@@ -226,14 +241,16 @@ export function RequestDetail({ request: r, box, balance, busy, error, onAction,
       </div>
 
       {actions || note ? (
-        <div className="space-y-3 border-t bg-muted/70 p-5 sm:px-8 sm:py-6">
+        <div className="border-t bg-wine-800 p-5 text-wine-on sm:px-8 sm:py-5">
           {error ? (
-            <p role="alert" className="text-sm font-semibold text-negative">
+            <p role="alert" className="mb-3 rounded-xl bg-white/90 px-4 py-2.5 text-sm font-semibold text-negative">
               {error}
             </p>
           ) : null}
-          {note ? <p className="text-sm font-medium text-muted-foreground">{note}</p> : null}
-          {actions ? <div className="flex flex-col gap-3 sm:flex-row">{actions}</div> : null}
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            {note ? <p className="text-sm font-medium text-wine-on-muted sm:max-w-sm">{note}</p> : <span />}
+            {actions ? <div className="flex flex-col gap-3 sm:flex-row-reverse sm:justify-start">{actions}</div> : null}
+          </div>
         </div>
       ) : null}
     </article>
