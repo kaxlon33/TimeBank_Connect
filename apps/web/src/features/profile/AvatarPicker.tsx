@@ -61,7 +61,7 @@ export function AvatarPicker({ name, value, onSelect }: Props) {
           type="button"
           onClick={() => camera.current?.click()}
           disabled={busy !== null}
-          className="press flex h-12 items-center justify-center gap-2 rounded-2xl bg-wine-700 px-4 text-sm font-bold text-wine-on hover:bg-wine-600 disabled:opacity-60"
+          className="press flex h-12 items-center justify-center gap-2 rounded-2xl bg-wine-700 px-3 text-[13px] font-bold whitespace-nowrap text-wine-on sm:px-4 sm:text-sm hover:bg-wine-600 disabled:opacity-60"
         >
           {busy === 'photo' ? <Loader2 className="size-[18px] animate-spin" aria-hidden="true" /> : <Camera className="size-[18px]" aria-hidden="true" />}
           Take a photo
@@ -70,7 +70,7 @@ export function AvatarPicker({ name, value, onSelect }: Props) {
           type="button"
           onClick={() => upload.current?.click()}
           disabled={busy !== null}
-          className="press flex h-12 items-center justify-center gap-2 rounded-2xl border bg-card px-4 text-sm font-bold hover:bg-secondary disabled:opacity-60"
+          className="press flex h-12 items-center justify-center gap-2 rounded-2xl border bg-card px-3 text-[13px] font-bold whitespace-nowrap sm:px-4 sm:text-sm hover:bg-secondary disabled:opacity-60"
         >
           <Upload className="size-[18px]" aria-hidden="true" />
           Upload

@@ -204,7 +204,11 @@ export function AdminMembersPage() {
             className="h-12 w-full rounded-2xl border bg-card pr-4 pl-11 text-sm outline-none placeholder:text-muted-foreground focus-visible:border-wine-600 focus-visible:ring-4 focus-visible:ring-wine-600/15 [&::-webkit-search-cancel-button]:hidden"
           />
         </div>
-        <div role="group" aria-label="Filter by status" className="flex max-w-full gap-1 self-start overflow-x-auto rounded-full bg-card p-1 shadow-card [scrollbar-width:none] sm:self-auto [&::-webkit-scrollbar]:hidden">
+        <div
+          role="group"
+          aria-label="Filter by status"
+          className="flex w-full max-w-full justify-between gap-0.5 overflow-x-auto rounded-full bg-card p-1 shadow-card [scrollbar-width:none] sm:w-auto sm:justify-start sm:gap-1 [&::-webkit-scrollbar]:hidden"
+        >
           {(
             [
               { value: 'all', label: 'All', dot: null },
@@ -219,13 +223,13 @@ export function AdminMembersPage() {
               aria-pressed={filter === f.value}
               onClick={() => setFilter(f.value)}
               className={cn(
-                'flex h-10 shrink-0 items-center gap-2 rounded-full px-4 text-sm font-bold transition-colors',
+                'flex h-10 shrink-0 items-center gap-1.5 rounded-full px-3 text-[13px] font-bold transition-colors sm:gap-2 sm:px-4 sm:text-sm',
                 filter === f.value ? 'bg-wine-800 text-wine-on' : 'text-muted-foreground hover:text-foreground',
               )}
             >
               {f.dot ? <span className={cn('size-2.5 rounded-full', dotColour[f.dot])} aria-hidden="true" /> : null}
               {f.label}
-              {f.dot && count(f.dot) > 0 ? <span className="text-xs opacity-70">{count(f.dot)}</span> : null}
+              {f.dot && count(f.dot) > 0 ? <span className="text-xs opacity-70 max-sm:hidden">{count(f.dot)}</span> : null}
             </button>
           ))}
         </div>
@@ -276,9 +280,9 @@ export function AdminMembersPage() {
               <li
                 key={m.id}
                 style={{ '--delay': staggerDelay(i) } as CSSProperties}
-                className="tile-in grid items-center gap-x-4 gap-y-3 px-4 py-4 sm:px-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_80px_80px_130px_130px]"
+                className="tile-in grid grid-cols-2 items-center gap-x-4 gap-y-3 px-4 py-4 sm:px-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_80px_80px_130px_130px]"
               >
-                <div className="flex min-w-0 items-center gap-3.5">
+                <div className="col-span-2 flex min-w-0 items-center gap-3.5 lg:col-span-1">
                   <span className="relative shrink-0">
                     <Avatar name={m.name} src={m.avatar_url} size={46} />
                     <Dot presence={presenceOf(m)} className="absolute right-0 bottom-0 size-3.5 ring-2 ring-card" />
@@ -308,7 +312,7 @@ export function AdminMembersPage() {
                   <span className="mr-1.5 text-xs font-bold text-muted-foreground uppercase lg:hidden">Last active</span>
                   {relativeTime(m.last_active_at)}
                 </p>
-                <div className="lg:text-right">
+                <div className="col-span-2 lg:col-span-1 lg:text-right">
                   <button
                     type="button"
                     onClick={() => setTarget(m)}

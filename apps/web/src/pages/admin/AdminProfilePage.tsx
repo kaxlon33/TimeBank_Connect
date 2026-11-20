@@ -40,7 +40,7 @@ export function AdminProfilePage() {
       >
         <div aria-hidden="true" className="rings pointer-events-none absolute inset-0" />
         <div className="relative flex flex-col gap-5 sm:flex-row sm:items-center">
-          <span className="block rounded-full bg-stone-100 p-1.5 shadow-raised">
+          <span className="block shrink-0 self-start rounded-full bg-stone-100 p-1.5 shadow-raised">
             <Avatar name={me.name} src={me.avatar_url} size={96} />
           </span>
           <div className="min-w-0">
