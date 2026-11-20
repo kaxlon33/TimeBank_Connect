@@ -25,4 +25,9 @@ export default tseslint.config(
       ],
     },
   },
+  {
+    // Generated shadcn/ui files export variant helpers next to components.
+    files: ['src/components/ui/**/*.tsx'],
+    rules: { 'react-refresh/only-export-components': 'off' },
+  },
 )

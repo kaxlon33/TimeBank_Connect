@@ -1,0 +1,433 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@theme inline {
+  --font-sans: var(--app-font-sans);
+  --font-heading: var(--app-font-heading);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-soft: var(--primary-soft);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-credit: var(--credit);
+  --color-credit-soft: var(--credit-soft);
+  --color-credit-foreground: var(--credit-foreground);
+  --color-star: var(--star);
+  --color-positive: var(--positive);
+  --color-negative: var(--negative);
+
+  --color-wine-900: var(--wine-900);
+  --color-wine-800: var(--wine-800);
+  --color-wine-700: var(--wine-700);
+  --color-wine-600: var(--wine-600);
+  --color-wine-on: var(--wine-on);
+  --color-wine-on-muted: var(--wine-on-muted);
+  --color-brass: var(--brass-on-wine);
+  --color-brass-ink: var(--brass-on-stone);
+  --color-stone-50: var(--stone-50);
+  --color-stone-100: var(--stone-100);
+  --color-stone-200: var(--stone-200);
+
+  --color-status-pending: var(--status-pending);
+  --color-status-pending-bg: var(--status-pending-bg);
+  --color-status-accepted: var(--status-accepted);
+  --color-status-accepted-bg: var(--status-accepted-bg);
+  --color-status-awaiting: var(--status-awaiting);
+  --color-status-awaiting-bg: var(--status-awaiting-bg);
+  --color-status-completed: var(--status-completed);
+  --color-status-completed-bg: var(--status-completed-bg);
+  --color-status-declined: var(--status-declined);
+  --color-status-declined-bg: var(--status-declined-bg);
+  --color-status-cancelled: var(--status-cancelled);
+  --color-status-cancelled-bg: var(--status-cancelled-bg);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+
+  --shadow-card: 0 1px 2px rgb(31 26 27 / 0.04);
+  --shadow-raised: 0 2px 4px rgb(31 26 27 / 0.06), 0 18px 40px -18px rgb(31 26 27 / 0.35);
+}
+
+/* One theme: deep burgundy + pale stone (light only). */
+:root {
+  color-scheme: light;
+  --radius: 0.75rem;
+  --app-font-sans: "Manrope Variable", ui-sans-serif, system-ui, sans-serif;
+  --app-font-heading: "Bricolage Grotesque Variable", ui-sans-serif, system-ui, sans-serif;
+
+  --wine-900: #2a0a14;
+  --wine-800: #3d0f1c;
+  --wine-700: #5e1a2b;
+  --wine-600: #7a2236;
+  --wine-on: #f5f2ee;
+  --wine-on-muted: #e7c9cf;
+  --brass-on-wine: #d9b77e;
+  --brass-on-stone: #7a5c2c;
+  --stone-50: #f5f2ee;
+  --stone-100: #ece7e1;
+  --stone-200: #ddd5cc;
+
+  --background: #ece7e1;
+  --foreground: #1f1a1b;
+  --card: #ffffff;
+  --card-foreground: #1f1a1b;
+  --popover: #fbf9f6;
+  --popover-foreground: #1f1a1b;
+  --primary: #5e1a2b;
+  --primary-foreground: #f5f2ee;
+  --primary-soft: #f3e6e8;
+  --secondary: #e4ddd5;
+  --secondary-foreground: #1f1a1b;
+  --muted: #f5f2ee;
+  --muted-foreground: #655b55;
+  --accent: #f3e6e8;
+  --accent-foreground: #5e1a2b;
+  --destructive: #a12a1f;
+  --border: #ddd5cc;
+  --input: #8c8077;
+  --ring: #7a2236;
+
+  --credit: #7a5c2c;
+  --credit-soft: #f2eadb;
+  --credit-foreground: #7a5c2c;
+  --star: #9a6f22;
+  --positive: #2f6b45;
+  --negative: #a12a1f;
+
+  --status-pending: #8a5300;
+  --status-pending-bg: #f6ebd4;
+  --status-accepted: #2c4f7c;
+  --status-accepted-bg: #e3eaf3;
+  --status-awaiting: #5b3a8e;
+  --status-awaiting-bg: #ece6f4;
+  --status-completed: #2f6b45;
+  --status-completed-bg: #e2eee5;
+  --status-declined: #a12a1f;
+  --status-declined-bg: #f6e3e0;
+  --status-cancelled: #5b5550;
+  --status-cancelled-bg: #e6e1db;
+
+  --chart-1: #5e1a2b;
+  --chart-2: #b08d57;
+  --chart-3: #c79aa5;
+
+  --sidebar: #3d0f1c;
+  --sidebar-foreground: #f5f2ee;
+  --sidebar-primary: #f5f2ee;
+  --sidebar-primary-foreground: #3d0f1c;
+  --sidebar-accent: #f5f2ee;
+  --sidebar-accent-foreground: #3d0f1c;
+  --sidebar-border: rgb(245 242 238 / 0.12);
+  --sidebar-ring: #d9b77e;
+
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    @apply font-sans;
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    min-height: 100dvh;
+  }
+  h1,
+  h2,
+  h3 {
+    font-family: var(--app-font-heading);
+    font-weight: 700;
+    letter-spacing: -0.035em;
+  }
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+}
+
+@layer utilities {
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* ---------- Surfaces ---------- */
+
+.tile {
+  border-radius: 20px;
+  background: var(--card);
+  border: 1px solid var(--stone-200);
+}
+.tile-wine {
+  border-radius: 20px;
+  background: var(--wine-800);
+  color: var(--wine-on);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.07);
+}
+.glass {
+  background: color-mix(in oklab, var(--wine-on) 9%, transparent);
+  border: 1px solid color-mix(in oklab, var(--wine-on) 16%, transparent);
+  backdrop-filter: blur(10px);
+}
+.numeral {
+  font-family: var(--app-font-heading);
+  font-weight: 700;
+  letter-spacing: -0.05em;
+  font-variant-numeric: tabular-nums;
+  line-height: 0.85;
+}
+
+/* Fine film grain over burgundy surfaces. */
+.grain {
+  position: relative;
+  isolation: isolate;
+}
+.grain::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.22;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .9 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+.dot-grid {
+  background-image: radial-gradient(color-mix(in oklab, var(--wine-on) 16%, transparent) 1px, transparent 1.2px);
+  background-size: 14px 14px;
+}
+.rings {
+  background-image: repeating-radial-gradient(
+    circle at 100% 0%,
+    transparent 0 22px,
+    color-mix(in oklab, var(--wine-on) 9%, transparent) 22px 23px
+  );
+}
+.skeleton-shimmer {
+  background: linear-gradient(90deg, var(--stone-100) 0%, var(--stone-50) 50%, var(--stone-100) 100%);
+  background-size: 200% 100%;
+  animation: tb-shimmer 1.4s linear infinite;
+}
+
+/* ---------- Motion ---------- */
+
+@keyframes tb-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes tb-pop {
+  0% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.12);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+@keyframes tb-credit-flash {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in oklab, var(--brass-on-wine) 60%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 10px transparent;
+  }
+}
+@keyframes tb-shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+@keyframes tile-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes aurora-a {
+  from {
+    transform: translate3d(-8%, -6%, 0) scale(1);
+  }
+  to {
+    transform: translate3d(10%, 8%, 0) scale(1.15);
+  }
+}
+@keyframes aurora-b {
+  from {
+    transform: translate3d(6%, 10%, 0) scale(1.1);
+  }
+  to {
+    transform: translate3d(-10%, -6%, 0) scale(0.95);
+  }
+}
+@keyframes drift {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-8px);
+  }
+}
+@keyframes word-in {
+  from {
+    opacity: 0;
+    transform: translateY(55%);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes tick-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes spin-slow {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.motion-fade {
+  animation: tb-fade 140ms ease-out both;
+}
+.motion-pop {
+  animation: tb-pop 260ms var(--ease-out) both;
+}
+.motion-credit-flash {
+  animation: tb-credit-flash 700ms ease-out;
+}
+.tile-in {
+  animation: tile-rise 320ms var(--ease-out) both;
+  animation-delay: var(--delay, 0ms);
+}
+.press {
+  transition: transform 140ms var(--ease-out);
+}
+.press:active {
+  transform: scale(0.985);
+}
+.seg-thumb {
+  transform: translateX(calc(var(--seg-index, 0) * 100%));
+  transition: transform 240ms var(--ease-out);
+}
+.nudge {
+  transition: transform 180ms var(--ease-out);
+}
+.group:hover .nudge,
+.group:focus-visible .nudge {
+  transform: translateX(3px);
+}
+.aurora-a {
+  animation: aurora-a 22s ease-in-out infinite alternate;
+}
+.aurora-b {
+  animation: aurora-b 28s ease-in-out infinite alternate;
+}
+.drift {
+  animation: drift 6s ease-in-out infinite alternate;
+  animation-delay: var(--delay, 0ms);
+}
+.word-in {
+  animation: word-in 550ms var(--ease-out) both;
+}
+.tick-in {
+  animation: tick-in 400ms var(--ease-out) both;
+}
+.spin-slow {
+  animation: spin-slow 120s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tile-in {
+    animation: tb-fade 120ms linear both;
+  }
+  .motion-pop,
+  .motion-credit-flash,
+  .skeleton-shimmer,
+  .aurora-a,
+  .aurora-b,
+  .drift,
+  .spin-slow,
+  .word-in,
+  .tick-in {
+    animation: none;
+  }
+  .press:active,
+  .group:hover .nudge {
+    transform: none;
+  }
+  .seg-thumb,
+  .nudge {
+    transition: none;
+  }
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+  }
+}
