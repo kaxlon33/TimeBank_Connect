@@ -1,5 +1,6 @@
 import { Check, ChevronDown, type LucideIcon } from 'lucide-react'
 import { DropdownMenu } from 'radix-ui'
+import { cn } from '@/lib/utils'
 
 export interface FilterOption<T extends string> {
   value: T
@@ -13,30 +14,62 @@ interface Props<T extends string> {
   value: T
   onChange: (value: T) => void
   options: FilterOption<T>[]
+  /** "bar" sits inside a search bar; "pill" stands alone. */
+  variant?: 'bar' | 'pill'
 }
 
-/** A pill that opens a small menu. Keyboard friendly: arrows to move, Enter to choose, Esc to close. */
-export function FilterMenu<T extends string>({ label, icon: Icon, value, onChange, options }: Props<T>) {
+/** A control that opens a small menu. Keyboard friendly: arrows to move, Enter to choose, Esc to close. */
+export function FilterMenu<T extends string>({
+  label,
+  icon: Icon,
+  value,
+  onChange,
+  options,
+  variant = 'pill',
+}: Props<T>) {
   const current = options.find((o) => o.value === value) ?? options[0]
 
   return (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger
         aria-label={`${label}: ${current.label}`}
-        className="press group flex h-11 shrink-0 items-center gap-2 rounded-full border bg-card pr-3 pl-3.5 text-sm font-bold outline-none transition-colors duration-200 hover:bg-primary-soft focus-visible:ring-2 focus-visible:ring-ring data-[state=open]:border-wine-700 data-[state=open]:bg-primary-soft"
+        className={cn(
+          'press group flex items-center text-left outline-none transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-ring',
+          variant === 'bar'
+            ? 'h-14 min-w-0 gap-3 rounded-2xl px-3 hover:bg-muted data-[state=open]:bg-primary-soft'
+            : 'h-11 shrink-0 gap-2 rounded-full border bg-card pr-3 pl-3.5 text-sm font-bold hover:bg-primary-soft data-[state=open]:border-wine-700 data-[state=open]:bg-primary-soft',
+        )}
       >
-        <Icon className="size-4 text-wine-700" aria-hidden="true" />
-        {current.label}
-        <ChevronDown
-          className="size-4 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180"
-          aria-hidden="true"
-        />
+        {variant === 'bar' ? (
+          <>
+            <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-primary-soft text-wine-700 max-sm:hidden">
+              <Icon className="size-[18px]" aria-hidden="true" />
+            </span>
+            <span className="flex min-w-0 flex-col leading-tight">
+              <span className="text-[11px] font-bold tracking-[0.08em] text-muted-foreground uppercase">{label}</span>
+              <span className="truncate text-sm font-bold">{current.label}</span>
+            </span>
+            <ChevronDown
+              className="ml-auto size-4 shrink-0 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180"
+              aria-hidden="true"
+            />
+          </>
+        ) : (
+          <>
+            <Icon className="size-4 text-wine-700" aria-hidden="true" />
+            {current.label}
+            <ChevronDown
+              className="size-4 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180"
+              aria-hidden="true"
+            />
+          </>
+        )}
       </DropdownMenu.Trigger>
 
       <DropdownMenu.Portal>
         <DropdownMenu.Content
           align="end"
-          sideOffset={8}
+          sideOffset={10}
           collisionPadding={12}
           className="z-50 min-w-[240px] origin-(--radix-dropdown-menu-content-transform-origin) rounded-2xl border bg-popover p-1.5 shadow-raised data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95"
         >
