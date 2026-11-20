@@ -56,6 +56,14 @@ export function ProfilePage() {
         </div>
         <div aria-hidden="true" className="absolute inset-0 -z-10 bg-gradient-to-t from-wine-900/95 via-wine-900/70 to-wine-900/55" />
 
+        <Link
+          to="/hours"
+          className="press absolute top-4 right-4 z-10 flex h-11 items-center gap-2 rounded-full border border-white/25 bg-wine-900/45 pr-4 pl-3.5 text-sm font-bold backdrop-blur-md hover:bg-wine-900/65 sm:top-6 sm:right-8"
+        >
+          <Clock className="size-4 text-brass" aria-hidden="true" />
+          Your hours
+        </Link>
+
         <div className="flex flex-col gap-8 px-5 pt-20 pb-7 sm:px-10 sm:pt-32 sm:pb-9 lg:flex-row lg:items-end lg:justify-between">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:gap-7">
             <div className="relative shrink-0 self-start">
@@ -152,29 +160,6 @@ export function ProfilePage() {
               })}
             </ul>
           </section>
-
-          <Link
-            to="/hours"
-            className="group flex items-center justify-between gap-4 rounded-[28px] bg-primary-soft p-6 transition-colors hover:bg-primary-soft/70 sm:px-8"
-          >
-            <span className="flex items-center gap-4">
-              <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-card text-wine-700">
-                <Clock className="size-6" aria-hidden="true" />
-              </span>
-              <span>
-                <span className="font-heading block text-xl font-bold tracking-[-0.03em] text-wine-800">Your usual hours</span>
-                <span className="mt-0.5 block text-sm text-wine-700/80">
-                  {me.availability.length
-                    ? `Free ${me.availability.length} ${me.availability.length === 1 ? 'day' : 'days'} a week`
-                    : 'Not set yet'}
-                </span>
-              </span>
-            </span>
-            <span className="flex items-center gap-1.5 text-sm font-bold text-wine-700">
-              Edit
-              <ArrowRight className="nudge size-4" aria-hidden="true" />
-            </span>
-          </Link>
 
           <section aria-labelledby="skills-title" className="rounded-[28px] border bg-card p-6 shadow-card sm:p-8">
             <div className="flex items-center justify-between gap-3">
