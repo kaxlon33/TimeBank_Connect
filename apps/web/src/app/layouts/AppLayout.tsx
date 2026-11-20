@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react'
 import { Link, NavLink, Outlet } from 'react-router-dom'
-import { ArrowLeftRight, Bell, Clock, Home, User, WifiOff } from 'lucide-react'
+import { ArrowLeftRight, Bell, Clock, Home, MapPin, User, WifiOff } from 'lucide-react'
 import { AccountMenu } from '@/components/AccountMenu'
 import { Logo, LogoMark } from '@/components/Logo'
 import { sessionStore } from '@/lib/api'
@@ -18,6 +18,7 @@ const desktopLinks = [
 
 const phoneLinks = [
   { to: '/', label: 'Browse', icon: Home, end: true },
+  { to: '/nearby', label: 'Nearby', icon: MapPin },
   { to: '/requests', label: 'Requests', icon: ArrowLeftRight },
   { to: '/credits', label: 'Credits', icon: Clock },
   { to: '/profile', label: 'Profile', icon: User },
@@ -129,7 +130,7 @@ export function AppLayout() {
             end={end}
             className={({ isActive }) =>
               cn(
-                'flex min-h-14 flex-1 flex-col items-center justify-center gap-0.5 rounded-full text-[11px] font-bold transition-colors duration-200',
+                'flex min-h-14 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-full text-[10.5px] font-bold transition-colors duration-200 min-[360px]:text-[11px]',
                 isActive ? 'bg-stone-50 text-wine-700' : 'text-wine-on-muted',
               )
             }
