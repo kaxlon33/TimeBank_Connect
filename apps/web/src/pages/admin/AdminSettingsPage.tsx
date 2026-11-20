@@ -10,7 +10,7 @@ import type { AppSettings, MatchingWeights } from '@/types'
 
 const weightMeta: { key: keyof MatchingWeights; label: string; hint: string; dot: string }[] = [
   { key: 'skill', label: 'Skill match', hint: 'How well the skill fits the request', dot: 'bg-wine-700' },
-  { key: 'location', label: 'Distance', hint: 'How close the helper lives', dot: 'bg-wine-500' },
+  { key: 'location', label: 'Distance', hint: 'How close the helper lives', dot: 'bg-[#b4637a]' },
   { key: 'availability', label: 'Availability', hint: 'Free at the time asked for', dot: 'bg-brass' },
   { key: 'reputation', label: 'Reputation', hint: 'Ratings and trust score', dot: 'bg-brass-ink' },
 ]
