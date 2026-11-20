@@ -1,12 +1,12 @@
 import { useState, useSyncExternalStore } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { ChevronRight, Clock, Heart, SearchX } from 'lucide-react'
-import { StarRating } from '@/components/StarRating'
-import { Avatar } from '@/components/Avatar'
+import { AvailabilityStrip } from '@/features/skills/AvailabilityStrip'
 import { HelperCard } from '@/features/skills/HelperCard'
 import { RequestPanel } from '@/features/skills/RequestPanel'
+import { ReviewsList } from '@/features/skills/ReviewsList'
 import { api, sessionStore } from '@/lib/api'
-import { distanceKm, relativeTime, weekdayNames } from '@/lib/format'
+import { distanceKm } from '@/lib/format'
 import { useAsync } from '@/lib/hooks'
 import { skillImage } from '@/lib/skillImages'
 import { cn } from '@/lib/utils'
@@ -128,63 +128,36 @@ export function SkillDetailPage() {
                 </Link>
               </section>
             ) : (
-              <RequestPanel skill={skill} balance={me.credit_balance} />
+              <RequestPanel skill={skill} slots={slots} balance={me.credit_balance} />
             )}
           </aside>
 
-          <section className="tile-in rounded-[28px] border bg-card p-6 shadow-card sm:p-8" style={{ '--delay': '60ms' } as React.CSSProperties}>
-            <h2 className="font-heading text-[28px] leading-none font-bold tracking-[-0.03em]">About this skill</h2>
-            <p className="mt-4 max-w-2xl text-base leading-relaxed text-muted-foreground">{skill.description}</p>
-
-            <h3 className="mt-8 text-sm font-bold">Usually available</h3>
-            {slots.length ? (
-              <ul className="mt-3 flex flex-wrap gap-3">
-                {slots.map((s) => (
-                  <li key={`${s.weekday}-${s.start_time}`} className="rounded-2xl border bg-muted px-5 py-3.5">
-                    <p className="text-xs font-bold text-wine-700">{weekdayNames[s.weekday]}</p>
-                    <p className="font-heading mt-0.5 text-lg leading-tight font-semibold tracking-[-0.02em]">
-                      {s.start_time} – {s.end_time}
-                    </p>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="mt-2 text-sm text-muted-foreground">No fixed times. Suggest one in your request.</p>
-            )}
-          </section>
-
-          <section aria-label="Reviews" className="tile-in" style={{ '--delay': '120ms' } as React.CSSProperties}>
-            <div className="mb-4 flex items-center justify-between gap-3">
-              <h2 className="font-heading text-2xl leading-none font-bold tracking-[-0.03em] sm:text-[28px]">What neighbours say</h2>
-              {helper.rating_avg ? (
-                <span className="shrink-0 rounded-full bg-status-pending-bg px-3.5 py-1.5 text-xs font-bold whitespace-nowrap text-status-pending">
-                  {helper.rating_avg.toFixed(1)} · {helper.rating_count} {helper.rating_count === 1 ? 'review' : 'reviews'}
-                </span>
-              ) : null}
+          <section
+            aria-label="Skill details"
+            className="tile-in divide-y rounded-[28px] border bg-card shadow-card"
+            style={{ '--delay': '60ms' } as React.CSSProperties}
+          >
+            <div className="p-6 sm:p-8">
+              <h2 className="font-heading text-2xl font-bold tracking-[-0.03em]">About this skill</h2>
+              <p className="mt-3 max-w-2xl text-base leading-relaxed text-muted-foreground">{skill.description}</p>
             </div>
-            {reviews.length ? (
-              <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                {reviews.map((r) => (
-                  <li key={r.id} className="flex flex-col justify-between gap-5 rounded-[24px] border bg-card p-5 shadow-card">
-                    <div className="space-y-3">
-                      <StarRating value={r.rating} />
-                      <p className="text-[15px] leading-relaxed">“{r.comment}”</p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <Avatar name={r.reviewer.name} size={36} />
-                      <div>
-                        <p className="text-sm leading-tight font-bold">{r.reviewer.name}</p>
-                        <p className="text-xs text-muted-foreground">{relativeTime(r.created_at)}</p>
-                      </div>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="rounded-[24px] border bg-card p-6 text-muted-foreground">
-                No reviews yet. Be the first to work with {helper.name.split(' ')[0]}.
-              </p>
-            )}
+
+            <div className="p-6 sm:p-8">
+              <div className="mb-5 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+                <h2 className="font-heading text-2xl font-bold tracking-[-0.03em]">When {helper.name.split(' ')[0]} is free</h2>
+                <p className="text-sm text-muted-foreground">Usual weekly hours</p>
+              </div>
+              {slots.length ? (
+                <AvailabilityStrip slots={slots} />
+              ) : (
+                <p className="text-sm text-muted-foreground">No fixed times. Suggest one in your request.</p>
+              )}
+            </div>
+
+            <div className="p-6 sm:p-8">
+              <h2 className="font-heading mb-6 text-2xl font-bold tracking-[-0.03em]">What neighbours say</h2>
+              <ReviewsList helper={helper} reviews={reviews} />
+            </div>
           </section>
         </div>
       )}
