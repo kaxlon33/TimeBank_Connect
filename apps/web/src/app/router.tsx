@@ -1,6 +1,11 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom'
+import { AdminShell } from '@/features/admin/AdminShell'
 import { AppLayout } from './layouts/AppLayout'
 import { RedirectIfSignedIn, RequireAuth } from './RequireAuth'
+import { AdminMembersPage } from '@/pages/admin/AdminMembersPage'
+import { AdminModerationPage } from '@/pages/admin/AdminModerationPage'
+import { AdminOverviewPage } from '@/pages/admin/AdminOverviewPage'
+import { AdminSettingsPage } from '@/pages/admin/AdminSettingsPage'
 import { BrowsePage } from '@/pages/BrowsePage'
 import { CreditsPage } from '@/pages/CreditsPage'
 import { ForgotPasswordPage } from '@/pages/ForgotPasswordPage'
@@ -36,6 +41,19 @@ export const router = createBrowserRouter([
       { path: '/profile', element: <ProfilePage /> },
       { path: '/hours', element: <HoursPage /> },
       { path: '/notifications', element: <NotificationsPage /> },
+    ],
+  },
+  {
+    element: (
+      <RequireAuth role="admin">
+        <AdminShell />
+      </RequireAuth>
+    ),
+    children: [
+      { path: '/admin', element: <AdminOverviewPage /> },
+      { path: '/admin/members', element: <AdminMembersPage /> },
+      { path: '/admin/moderation', element: <AdminModerationPage /> },
+      { path: '/admin/settings', element: <AdminSettingsPage /> },
     ],
   },
   { path: '*', element: <Navigate to="/" replace /> },
