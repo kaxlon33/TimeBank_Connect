@@ -51,34 +51,30 @@ export function AvatarPicker({ name, value, onSelect }: Props) {
   ]
 
   return (
-    <section id="avatar-picker" aria-labelledby={`${id}-title`} className="scroll-mt-24 rounded-[28px] border bg-card p-6 shadow-card sm:p-8">
-      <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h2 id={`${id}-title`} className="font-heading text-2xl font-bold tracking-[-0.03em]">
-            Your avatar
-          </h2>
-          <p className="mt-1.5 text-sm text-muted-foreground">No photo yet? Pick a friendly face. You can change it any time.</p>
-        </div>
-        <div className="flex gap-2.5">
-          <button
-            type="button"
-            onClick={() => camera.current?.click()}
-            disabled={busy !== null}
-            className="press flex h-12 items-center gap-2 rounded-2xl bg-wine-700 px-5 text-sm font-bold text-wine-on hover:bg-wine-600 disabled:opacity-60"
-          >
-            {busy === 'photo' ? <Loader2 className="size-[18px] animate-spin" aria-hidden="true" /> : <Camera className="size-[18px]" aria-hidden="true" />}
-            Take a photo
-          </button>
-          <button
-            type="button"
-            onClick={() => upload.current?.click()}
-            disabled={busy !== null}
-            className="press flex h-12 items-center gap-2 rounded-2xl border bg-card px-5 text-sm font-bold hover:bg-secondary disabled:opacity-60"
-          >
-            <Upload className="size-[18px]" aria-hidden="true" />
-            Upload
-          </button>
-        </div>
+    <section id="avatar-picker" aria-labelledby={`${id}-title`} className="scroll-mt-24">
+      <h2 id={`${id}-title`} className="font-heading text-2xl font-bold tracking-[-0.03em]">
+        Your avatar
+      </h2>
+      <p className="mt-1.5 text-sm text-muted-foreground">No photo yet? Pick a friendly face. You can change it any time.</p>
+      <div className="mt-5 grid grid-cols-2 gap-2.5">
+        <button
+          type="button"
+          onClick={() => camera.current?.click()}
+          disabled={busy !== null}
+          className="press flex h-12 items-center justify-center gap-2 rounded-2xl bg-wine-700 px-4 text-sm font-bold text-wine-on hover:bg-wine-600 disabled:opacity-60"
+        >
+          {busy === 'photo' ? <Loader2 className="size-[18px] animate-spin" aria-hidden="true" /> : <Camera className="size-[18px]" aria-hidden="true" />}
+          Take a photo
+        </button>
+        <button
+          type="button"
+          onClick={() => upload.current?.click()}
+          disabled={busy !== null}
+          className="press flex h-12 items-center justify-center gap-2 rounded-2xl border bg-card px-4 text-sm font-bold hover:bg-secondary disabled:opacity-60"
+        >
+          <Upload className="size-[18px]" aria-hidden="true" />
+          Upload
+        </button>
       </div>
 
       <input
@@ -107,10 +103,10 @@ export function AvatarPicker({ name, value, onSelect }: Props) {
         }}
       />
 
-      <div role="radiogroup" aria-label="Choose an avatar" className="mt-7 flex flex-wrap gap-3.5">
+      <div role="radiogroup" aria-label="Choose an avatar" className="mt-5 grid grid-cols-5 gap-2.5">
         {isPhoto ? (
-          <span className="relative rounded-full p-1 ring-[3px] ring-brass">
-            <Avatar name={name} src={value} size={64} />
+          <span className="relative justify-self-center rounded-full p-0.5 ring-[3px] ring-brass">
+            <Avatar name={name} src={value} size={52} />
             <span className="absolute -right-1 -bottom-1 grid size-6 place-items-center rounded-full bg-wine-700 text-wine-on ring-2 ring-card">
               <Check className="size-3.5" strokeWidth={3} aria-hidden="true" />
             </span>
@@ -129,11 +125,11 @@ export function AvatarPicker({ name, value, onSelect }: Props) {
               disabled={busy !== null}
               onClick={() => choose(o.key, o.src)}
               className={cn(
-                'press relative rounded-full p-1 transition-shadow duration-200 hover:scale-105',
+                'press relative justify-self-center rounded-full p-0.5 transition-shadow duration-200 hover:scale-105',
                 on ? 'ring-[3px] ring-brass' : 'ring-1 ring-border',
               )}
             >
-              <Avatar name={o.src === null ? name : `${o.key} look`} src={o.src} size={64} />
+              <Avatar name={o.src === null ? name : `${o.key} look`} src={o.src} size={52} />
               {on ? (
                 <span className="absolute -right-1 -bottom-1 grid size-6 place-items-center rounded-full bg-wine-700 text-wine-on ring-2 ring-card">
                   <Check className="size-3.5" strokeWidth={3} aria-hidden="true" />

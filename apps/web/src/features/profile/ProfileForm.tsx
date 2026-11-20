@@ -61,7 +61,7 @@ export function ProfileForm({ user }: { user: User }) {
   }
 
   return (
-    <form onSubmit={onSubmit} noValidate className="rounded-[28px] border bg-card p-6 shadow-card sm:p-7">
+    <form onSubmit={onSubmit} noValidate>
       <h2 className="font-heading text-2xl font-bold tracking-[-0.03em]">Your details</h2>
       <p className="mt-1.5 text-sm text-muted-foreground">Others only ever see your area, never your address.</p>
 
@@ -90,7 +90,7 @@ export function ProfileForm({ user }: { user: User }) {
           />
         </Field>
 
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+        <div className="grid gap-5 sm:grid-cols-2">
           <Field id="profile-country" label="Country" error={errors.country}>
             <CountrySelect
               id="profile-country"
