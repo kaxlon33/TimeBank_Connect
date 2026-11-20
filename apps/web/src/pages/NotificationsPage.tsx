@@ -45,6 +45,18 @@ export function NotificationsPage() {
     navigate(n.link)
   }
 
+  function toggleRead(n: AppNotification) {
+    if (n.read_at) {
+      feed.setData((prev) => prev.map((x) => (x.id === n.id ? { ...x, read_at: null } : x)))
+      void api.markNotificationUnread(n.id)
+      toast.success('Marked as unread')
+    } else {
+      stamp(n.id)
+      void api.markNotificationRead(n.id)
+      toast.success('Marked as read')
+    }
+  }
+
   async function markAll() {
     setMarking(true)
     try {
@@ -139,10 +151,12 @@ export function NotificationsPage() {
           <div className="space-y-6">
             {groups.map((g) => (
               <section key={g.label} aria-label={g.label} className="rounded-[28px] border bg-card p-2 shadow-card sm:p-3">
-                <h2 className="px-3.5 pt-3 pb-2 text-[11px] font-bold tracking-[0.1em] text-muted-foreground uppercase sm:px-4">{g.label}</h2>
+                <h2 className="px-3.5 pt-3 pb-2 text-[11px] font-bold tracking-[0.1em] text-muted-foreground uppercase sm:px-4">
+                  {g.label}
+                </h2>
                 <ul>
                   {g.items.map((n, i) => (
-                    <NotificationRow key={n.id} notification={n} index={i} onOpen={() => void open(n)} />
+                    <NotificationRow key={n.id} notification={n} index={i} onOpen={() => void open(n)} onToggleRead={() => toggleRead(n)} />
                   ))}
                 </ul>
               </section>

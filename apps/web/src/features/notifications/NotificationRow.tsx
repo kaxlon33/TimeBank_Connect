@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react'
-import { Award, Ban, CheckCheck, CircleCheck, CircleX, Coins, Inbox, Star, type LucideIcon } from 'lucide-react'
+import { Award, Ban, CheckCheck, CircleCheck, CircleX, Coins, Inbox, Mail, MailOpen, Star, type LucideIcon } from 'lucide-react'
 import { relativeTime } from '@/lib/format'
 import { staggerDelay } from '@/lib/hooks'
 import { cn } from '@/lib/utils'
@@ -31,37 +31,47 @@ interface Props {
   notification: AppNotification
   index: number
   onOpen: () => void
+  onToggleRead: () => void
 }
 
-export function NotificationRow({ notification: n, index, onOpen }: Props) {
+export function NotificationRow({ notification: n, index, onOpen, onToggleRead }: Props) {
   const Icon = icons[n.type]
   const unread = !n.read_at
   return (
     <li style={{ '--delay': staggerDelay(index) } as CSSProperties} className="tile-in">
-      <button
-        type="button"
-        onClick={onOpen}
+      <div
         className={cn(
-          'press group flex w-full items-center gap-4 rounded-2xl p-3.5 text-left transition-colors sm:px-4',
+          'flex items-center gap-1 rounded-2xl pr-2 transition-colors sm:pr-3',
           unread ? 'bg-primary-soft/70 hover:bg-primary-soft' : 'hover:bg-muted/70',
         )}
       >
-        <span className={cn('grid size-12 shrink-0 place-items-center rounded-2xl', tints[n.type])}>
-          <Icon className="size-5" aria-hidden="true" />
-        </span>
-        <span className="min-w-0 flex-1">
-          <span className={cn('block text-[15px] leading-snug', unread ? 'font-bold' : 'font-semibold')}>{n.title}</span>
-          <span className="mt-0.5 block text-[13px] leading-snug text-muted-foreground">{n.body}</span>
-        </span>
-        <span className="flex shrink-0 flex-col items-end gap-2">
-          <span className="text-xs font-semibold text-muted-foreground">{relativeTime(n.created_at)}</span>
-          {unread ? (
-            <span className="size-2.5 rounded-full bg-wine-700" aria-label="Unread" />
-          ) : (
-            <span className="size-2.5" aria-hidden="true" />
-          )}
-        </span>
-      </button>
+        <button type="button" onClick={onOpen} className="press flex min-w-0 flex-1 items-center gap-4 rounded-2xl p-3.5 text-left sm:px-4">
+          <span className={cn('grid size-12 shrink-0 place-items-center rounded-2xl', tints[n.type])}>
+            <Icon className="size-5" aria-hidden="true" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className={cn('block text-[15px] leading-snug', unread ? 'font-bold' : 'font-semibold')}>{n.title}</span>
+            <span className="mt-0.5 block text-[13px] leading-snug text-muted-foreground">{n.body}</span>
+          </span>
+          <span className="flex shrink-0 flex-col items-end gap-2">
+            <span className="text-xs font-semibold text-muted-foreground">{relativeTime(n.created_at)}</span>
+            {unread ? (
+              <span className="size-2.5 rounded-full bg-wine-700" role="img" aria-label="Unread" />
+            ) : (
+              <span className="size-2.5" aria-hidden="true" />
+            )}
+          </span>
+        </button>
+        <button
+          type="button"
+          onClick={onToggleRead}
+          aria-label={unread ? 'Mark as read' : 'Mark as unread'}
+          title={unread ? 'Mark as read' : 'Mark as unread'}
+          className="press grid size-10 shrink-0 place-items-center rounded-xl text-muted-foreground hover:bg-card hover:text-wine-700"
+        >
+          {unread ? <MailOpen className="size-[18px]" aria-hidden="true" /> : <Mail className="size-[18px]" aria-hidden="true" />}
+        </button>
+      </div>
     </li>
   )
 }
