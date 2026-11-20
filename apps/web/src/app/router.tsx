@@ -1,11 +1,12 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { AppLayout } from './layouts/AppLayout'
 import { BrowsePage } from '@/pages/BrowsePage'
-import { ComingSoonPage } from '@/pages/ComingSoonPage'
 import { CreditsPage } from '@/pages/CreditsPage'
 import { HoursPage } from '@/pages/HoursPage'
 import { LoginPage } from '@/pages/LoginPage'
 import { MySkillsPage } from '@/pages/MySkillsPage'
+import { NearbyPage } from '@/pages/NearbyPage'
+import { NotificationsPage } from '@/pages/NotificationsPage'
 import { ProfilePage } from '@/pages/ProfilePage'
 import { RegisterPage } from '@/pages/RegisterPage'
 import { RequestsPage } from '@/pages/RequestsPage'
@@ -19,13 +20,13 @@ export const router = createBrowserRouter([
     children: [
       { path: '/', element: <BrowsePage /> },
       { path: '/skills/:id', element: <SkillDetailPage /> },
-      { path: '/nearby', element: <ComingSoonPage title="Nearby helpers" /> },
+      { path: '/nearby', element: <NearbyPage /> },
       { path: '/requests', element: <RequestsPage /> },
       { path: '/credits', element: <CreditsPage /> },
       { path: '/my-skills', element: <MySkillsPage /> },
       { path: '/profile', element: <ProfilePage /> },
       { path: '/hours', element: <HoursPage /> },
-      { path: '/notifications', element: <ComingSoonPage title="Notifications" /> },
+      { path: '/notifications', element: <NotificationsPage /> },
     ],
   },
   { path: '*', element: <Navigate to="/" replace /> },

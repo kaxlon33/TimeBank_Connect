@@ -461,6 +461,8 @@ export const api = {
             return {
               user: { ...u },
               distance_km: distanceKm(position.lat, position.lng, lat, lng),
+              lat,
+              lng,
               skills: db.skills
                 .filter((s) => s.user.id === u.id && s.status === 'active')
                 .map((s) => ({ id: s.id, title: s.title })),

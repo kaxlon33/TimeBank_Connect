@@ -170,6 +170,8 @@ export interface Review {
 export interface NearbyHelper {
   user: UserSummary
   distance_km: number
+  lat: number
+  lng: number
   skills: Pick<Skill, 'id' | 'title'>[]
 }
 
