@@ -118,7 +118,7 @@ function CategoriesCard() {
       </div>
 
       {cats.status === 'loading' ? (
-        <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3" aria-busy="true">
+        <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3" aria-busy="true">
           {Array.from({ length: 6 }, (_, i) => (
             <div key={i} className="skeleton-shimmer h-[68px] rounded-2xl" />
           ))}
@@ -131,7 +131,7 @@ function CategoriesCard() {
           </button>
         </p>
       ) : (
-        <ul className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        <ul className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {list.map((c) => (
             <li key={c.id} className={cn('flex items-center gap-2.5 rounded-2xl border p-3 pl-4', c.is_active ? 'bg-card' : 'bg-muted/60')}>
               {editing === c.id ? (

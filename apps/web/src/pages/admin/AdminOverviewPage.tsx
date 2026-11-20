@@ -133,7 +133,7 @@ export function AdminOverviewPage() {
             </div>
           </section>
 
-          <div className="grid items-stretch gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+          <div className="grid grid-cols-1 items-stretch gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
             <section aria-labelledby="weeks-title" className={cn(card, 'tile-in flex flex-col')}>
               <h2 id="weeks-title" className="font-heading text-2xl font-bold tracking-[-0.03em]">
                 Sessions per week

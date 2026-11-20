@@ -131,7 +131,7 @@ export function RequestsPage() {
         </div>
       </header>
 
-      <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(340px,460px)_minmax(0,1fr)] lg:items-start">
+      <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(340px,460px)_minmax(0,1fr)] lg:items-start">
         <section aria-label="Requests list" className={cn(mobileOpen && 'hidden lg:block')}>
           {current.status === 'loading' ? (
             <ListSkeleton />
