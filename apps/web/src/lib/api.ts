@@ -77,16 +77,22 @@ export interface SessionSnapshot {
   unread: number
   /** True while a member is logged in. It is remembered in the browser so a refresh keeps them logged in. */
   signedIn: boolean
+  /** Reports waiting for an admin decision (shown on the admin sidebar). */
+  openReports: number
 }
 
 const listeners = new Set<() => void>()
+// The member who is logged in. Logging in as the admin switches it, so the admin pages show the admin.
+const storedSession = readStored<{ email: string } | null>('session', null)
+let currentUserId: number =
+  (storedSession && db.users.find((u) => u.email.toLowerCase() === storedSession.email.toLowerCase())?.id) || CURRENT_USER_ID
 const me = () => {
-  const user = db.users.find((u) => u.id === CURRENT_USER_ID)
+  const user = db.users.find((u) => u.id === currentUserId)
   if (!user) throw new Error('Signed-in mock user missing')
   return user
 }
-let signedIn = readStored<{ email: string } | null>('session', null) !== null
-let snapshot: SessionSnapshot = { me: me(), unread: db.notifications.filter((n) => !n.read_at).length, signedIn }
+let signedIn = storedSession !== null
+let snapshot: SessionSnapshot = { me: me(), unread: db.notifications.filter((n) => !n.read_at).length, signedIn, openReports: db.reported.length }
 
 function setSignedIn(value: boolean, email?: string) {
   signedIn = value
@@ -95,7 +101,7 @@ function setSignedIn(value: boolean, email?: string) {
 }
 
 function emit() {
-  snapshot = { me: { ...me() }, unread: db.notifications.filter((n) => !n.read_at).length, signedIn }
+  snapshot = { me: { ...me() }, unread: db.notifications.filter((n) => !n.read_at).length, signedIn, openReports: db.reported.length }
   listeners.forEach((l) => l())
 }
 
@@ -178,6 +184,7 @@ export const api = {
     const expected = (user && passwordChanges.get(user.email.toLowerCase())) ?? 'password'
     if (!user || password !== expected) throw new ApiError('Email or password is incorrect', 422)
     if (user.status === 'suspended') throw new ApiError('This account has been suspended. Contact the TimeBank team for help.', 403)
+    currentUserId = user.id
     setSignedIn(true, user.email)
     emit()
     return structuredClone(user)
@@ -632,7 +639,26 @@ export const api = {
           ? (db.skills.find((x) => x.id === id)?.title ?? 'Skill')
           : `Review by ${db.reviews.find((x) => x.id === id)?.reviewer.name ?? 'member'}`
       db.audit.unshift({ id: newId(), action: `${kind}.${action}`, actor: 'Admin User', target, reason, created_at: new Date().toISOString() })
+      // A removed item no longer needs a decision.
+      if (action === 'remove') db.reported = db.reported.filter((r) => !(r.kind === kind && r.target_id === id))
     }, 450)
+  },
+
+  /** Keeps the content and closes the report. */
+  dismissReport(id: ID): Promise<void> {
+    return mutate(() => {
+      const report = db.reported.find((r) => r.id === id)
+      if (!report) throw new ApiError('Report not found', 404)
+      db.reported = db.reported.filter((r) => r.id !== id)
+      db.audit.unshift({
+        id: newId(),
+        action: 'report.dismiss',
+        actor: 'Admin User',
+        target: report.title,
+        reason: 'Reviewed and kept: no rule broken.',
+        created_at: new Date().toISOString(),
+      })
+    }, 400)
   },
 
   getSettings(): Promise<AppSettings> {
