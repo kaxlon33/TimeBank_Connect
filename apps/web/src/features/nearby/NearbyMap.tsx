@@ -86,6 +86,20 @@ export const NearbyMap = forwardRef<NearbyMapHandle, Props>(function NearbyMap(
     },
   }))
 
+  const markers = useRef(new Map<number | string, { marker: L.Marker; helper: NearbyHelper }>())
+  const selectedRef = useRef<NearbyHelper | null>(null)
+  const lastView = useRef('')
+
+  // Tells the page where the chosen pin is, so its card can sit above it.
+  const emit = useRef(() => {})
+  emit.current = () => {
+    const m = map.current
+    const h = selectedRef.current
+    if (!m || !h) return onPointRef.current(null)
+    const p = m.latLngToContainerPoint([h.lat, h.lng])
+    onPointRef.current({ x: p.x, y: p.y })
+  }
+
   useEffect(() => {
     if (!box.current) return
     const m = L.map(box.current, { zoomControl: false, scrollWheelZoom: false, attributionControl: true })
@@ -96,20 +110,25 @@ export const NearbyMap = forwardRef<NearbyMapHandle, Props>(function NearbyMap(
     m.setView([centre.lat, centre.lng], 14)
     layer.current = L.layerGroup().addTo(m)
     map.current = m
+    const follow = () => emit.current()
+    m.on('move zoom resize', follow)
     return () => {
+      m.off('move zoom resize', follow)
       m.remove()
       map.current = null
       layer.current = null
     }
-    // The map is created once; later changes are applied by the effect below.
+    // The map is created once; later changes are applied by the effects below.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // Rings, your dot and the pins. Rebuilt only when the place, distance or helpers change, never on a click.
   useEffect(() => {
     const m = map.current
     const group = layer.current
     if (!m || !group) return
     group.clearLayers()
+    markers.current.clear()
 
     // Three dashed rings, like the design: a third, two thirds and the full distance.
     const rings = [1 / 3, 2 / 3, 1].map((f) =>
@@ -129,30 +148,50 @@ export const NearbyMap = forwardRef<NearbyMapHandle, Props>(function NearbyMap(
     L.marker([centre.lat, centre.lng], { icon: youIcon, keyboard: false, interactive: false }).addTo(group)
 
     helpers.forEach((h) => {
-      L.marker([h.lat, h.lng], {
-        icon: helperIcon(h, h.user.id === selectedId),
-        title: h.user.name,
-        zIndexOffset: h.user.id === selectedId ? 1000 : 0,
-      })
+      const marker = L.marker([h.lat, h.lng], { icon: helperIcon(h, false), title: h.user.name })
         .on('click', () => onSelectRef.current(h.user.id))
         .addTo(group)
+      markers.current.set(h.user.id, { marker, helper: h })
     })
 
-    const selected = helpers.find((h) => h.user.id === selectedId)
-    const emit = () => {
-      if (!selected) return onPointRef.current(null)
-      const p = m.latLngToContainerPoint([selected.lat, selected.lng])
-      onPointRef.current({ x: p.x, y: p.y })
+    // Frame the rings only when the place or distance changed, so filtering does not make the map jump.
+    const key = `${centre.lat}|${centre.lng}|${radiusKm}`
+    if (lastView.current !== key) {
+      lastView.current = key
+      m.fitBounds(rings[2].getBounds(), { padding: [48, 48], animate: false })
     }
-    m.on('move zoom resize', emit)
+    // Restyle for the current choice (the rebuild above resets every pin).
+    markers.current.forEach(({ marker, helper }) => {
+      const on = helper.user.id === selectedRef.current?.user.id
+      if (on) {
+        marker.setIcon(helperIcon(helper, true))
+        marker.setZIndexOffset(1000)
+      }
+    })
+    emit.current()
+  }, [centre.lat, centre.lng, radiusKm, helpers])
 
-    if (selected) m.flyTo([selected.lat, selected.lng], Math.max(m.getZoom(), 15), { duration: 0.5 })
-    else m.fitBounds(rings[2].getBounds(), { padding: [48, 48], animate: false })
-    emit()
-    return () => {
-      m.off('move zoom resize', emit)
+  // Choosing a helper: restyle two pins and glide the map a little. No rebuild, no zoom animation.
+  useEffect(() => {
+    const m = map.current
+    selectedRef.current = helpers.find((h) => h.user.id === selectedId) ?? null
+    markers.current.forEach(({ marker, helper }) => {
+      const on = helper.user.id === selectedId
+      marker.setIcon(helperIcon(helper, on))
+      marker.setZIndexOffset(on ? 1000 : 0)
+    })
+    const chosen = selectedRef.current
+    if (m && chosen) {
+      // Put the pin a little below the middle so the card above it stays in view.
+      const size = m.getSize()
+      const at = m.latLngToContainerPoint([chosen.lat, chosen.lng])
+      const want = L.point(size.x / 2, size.y * (size.x < 640 ? 0.42 : 0.64))
+      const delta = at.subtract(want)
+      if (Math.abs(delta.x) > 6 || Math.abs(delta.y) > 6) m.panBy(delta, { animate: true, duration: 0.45, easeLinearity: 0.35 })
     }
-  }, [centre.lat, centre.lng, radiusKm, helpers, selectedId])
+    emit.current()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedId])
 
   // Leaflet needs a nudge when its box changes size (phone rotation, layout shifts).
   useEffect(() => {

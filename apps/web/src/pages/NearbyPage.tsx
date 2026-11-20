@@ -24,6 +24,7 @@ export function NearbyPage() {
   const desktop = useMediaQuery('(min-width: 1024px)')
   const mapRef = useRef<NearbyMapHandle>(null)
   const rows = useRef(new Map<number | string, HTMLLIElement>())
+  const listBox = useRef<HTMLDivElement>(null)
 
   const [view, setView] = useState<View>('map')
   const [radius, setRadius] = useState<Radius>(10)
@@ -55,8 +56,15 @@ export function NearbyPage() {
     if (selected !== null && !chosen) setSelected(null)
   }, [selected, chosen])
 
+  // Keep the chosen helper visible in the list, scrolling only the list itself and never the page.
   useEffect(() => {
-    if (selected !== null) rows.current.get(selected)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+    const box = listBox.current
+    const row = selected === null ? null : rows.current.get(selected)
+    if (!box || !row) return
+    const top = row.offsetTop - box.offsetTop
+    if (top < box.scrollTop) box.scrollTo({ top: top - 8, behavior: 'smooth' })
+    else if (top + row.offsetHeight > box.scrollTop + box.clientHeight)
+      box.scrollTo({ top: top + row.offsetHeight - box.clientHeight + 8, behavior: 'smooth' })
   }, [selected])
 
   function useMyLocation() {
@@ -265,7 +273,7 @@ export function NearbyPage() {
               </button>
             </div>
 
-            <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-3">
+            <div ref={listBox} className="relative min-h-0 flex-1 overflow-y-auto px-3 pb-3">
               {fetched.status === 'loading' ? (
                 <div className="space-y-2.5" aria-busy="true">
                   {Array.from({ length: 3 }, (_, i) => (
