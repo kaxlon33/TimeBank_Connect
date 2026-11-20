@@ -6,7 +6,7 @@ import { Avatar } from '@/components/Avatar'
 import { AvatarPicker } from '@/features/profile/AvatarPicker'
 import { badgeIcons, BADGES } from '@/features/profile/badges'
 import { ProfileForm } from '@/features/profile/ProfileForm'
-import { AvailabilityStrip } from '@/features/skills/AvailabilityStrip'
+import { AvailabilityEditor } from '@/features/profile/AvailabilityEditor'
 import { ReviewsList } from '@/features/skills/ReviewsList'
 import { api, sessionStore } from '@/lib/api'
 import { formatDate } from '@/lib/format'
@@ -226,8 +226,8 @@ export function ProfilePage() {
             <h2 id="hours-title" className="font-heading text-2xl font-bold tracking-[-0.03em] text-wine-800">
               Your usual hours
             </h2>
-            <p className="mt-1.5 mb-5 text-sm text-wine-700/80">When neighbours can ask you for help.</p>
-            <AvailabilityStrip slots={me.availability} />
+            <p className="mt-1.5 mb-5 text-sm text-wine-700/80">Switch on the days you are free and choose your hours.</p>
+            <AvailabilityEditor key={me.id} slots={me.availability} />
           </section>
         </div>
       </div>

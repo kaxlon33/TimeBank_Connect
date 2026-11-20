@@ -7,6 +7,7 @@
  */
 import type {
   AdminMember,
+  AvailabilitySlot,
   AdminStats,
   AppNotification,
   AppSettings,
@@ -434,6 +435,14 @@ export const api = {
       Object.assign(user, { name: input.name, bio: input.bio, area, avatar_url: avatarUrl })
       return user
     }, 700)
+  },
+
+  updateAvailability(slots: AvailabilitySlot[]): Promise<User> {
+    return mutate(() => {
+      const user = me()
+      user.availability = slots.map((s) => ({ ...s }))
+      return user
+    }, 600)
   },
 
   /* ---------- nearby ---------- */
