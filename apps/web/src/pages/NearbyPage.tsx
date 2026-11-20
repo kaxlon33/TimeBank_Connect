@@ -202,7 +202,7 @@ export function NearbyPage() {
                 className={cn('absolute z-[600]', desktop ? 'w-[270px]' : 'inset-x-3 bottom-[76px] flex justify-center')}
                 style={desktop && point ? { left: point.x, top: point.y - 52, transform: 'translate(-50%, -100%)' } : undefined}
               >
-                <PreviewCard helper={chosen} />
+                <PreviewCard helper={chosen} onClose={() => setSelected(null)} />
               </div>
             ) : null}
 

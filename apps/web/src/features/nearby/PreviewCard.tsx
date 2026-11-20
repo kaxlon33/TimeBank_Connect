@@ -1,11 +1,11 @@
 import { Link } from 'react-router-dom'
-import { ArrowUpRight, Star } from 'lucide-react'
+import { ArrowUpRight, Star, X } from 'lucide-react'
 import { formatDistance } from '@/lib/format'
 import { skillImage } from '@/lib/skillImages'
 import type { NearbyHelper } from '@/types'
 
 /** The card that opens above the chosen pin: the skill, who offers it and a way to ask. */
-export function PreviewCard({ helper: h }: { helper: NearbyHelper }) {
+export function PreviewCard({ helper: h, onClose }: { helper: NearbyHelper; onClose: () => void }) {
   const first = h.skills[0]
   return (
     <div className="w-[270px] overflow-hidden rounded-[22px] bg-card shadow-raised">
@@ -16,6 +16,14 @@ export function PreviewCard({ helper: h }: { helper: NearbyHelper }) {
           {h.user.rating_avg ? h.user.rating_avg.toFixed(1) : 'New'}
           {h.user.rating_count ? <span className="font-semibold text-muted-foreground">· {h.user.rating_count}</span> : null}
         </span>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close helper details"
+          className="press absolute top-2.5 right-2.5 grid size-9 place-items-center rounded-full bg-white/92 text-foreground shadow-card hover:bg-white"
+        >
+          <X className="size-4" aria-hidden="true" />
+        </button>
       </div>
       <div className="p-3.5">
         <p className="font-heading text-xl leading-tight font-bold tracking-[-0.03em]">{first?.title ?? 'Helper'}</p>
