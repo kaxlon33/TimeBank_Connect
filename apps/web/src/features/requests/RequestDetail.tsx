@@ -19,24 +19,24 @@ interface Props {
   onBack: () => void
 }
 
-function Step({ label, detail, state, last }: { label: string; detail: string; state: 'done' | 'current' | 'todo'; last: boolean }) {
+function Step({ label, detail, state, last, settled }: { label: string; detail: string; state: 'done' | 'current' | 'todo'; last: boolean; settled: boolean }) {
   return (
     <li className="flex gap-3.5">
       <div className="flex flex-col items-center">
         <span
           className={cn(
             'grid size-[30px] shrink-0 place-items-center rounded-full text-xs font-bold transition-colors',
-            state === 'done' && 'bg-wine-700 text-wine-on',
+            state === 'done' && (settled ? 'bg-stone-300 text-stone-600' : 'bg-wine-700 text-wine-on'),
             state === 'current' && 'bg-brass text-wine-900 ring-4 ring-brass/25',
             state === 'todo' && 'bg-stone-100 text-muted-foreground',
           )}
         >
           {state === 'done' ? <Check className="size-4" strokeWidth={3} aria-hidden="true" /> : <Clock className="size-3.5" aria-hidden="true" />}
         </span>
-        {last ? null : <span className={cn('my-1 w-0.5 flex-1 rounded-full', state === 'done' ? 'bg-wine-700' : 'bg-stone-200')} />}
+        {last ? null : <span className={cn('my-1 w-0.5 flex-1 rounded-full', state === 'done' ? (settled ? 'bg-stone-300' : 'bg-wine-700') : 'bg-stone-200')} />}
       </div>
       <div className={cn('pb-5', last && 'pb-0')}>
-        <p className={cn('text-[15px] leading-tight font-bold', state === 'todo' && 'text-muted-foreground')}>{label}</p>
+        <p className={cn('text-[15px] leading-tight font-bold', (state === 'todo' || settled) && 'text-muted-foreground')}>{label}</p>
         <p className="mt-0.5 text-[13px] text-muted-foreground">{detail}</p>
       </div>
     </li>
@@ -216,7 +216,7 @@ export function RequestDetail({ request: r, box, balance, busy, error, onAction,
           </div>
         </div>
 
-        <div className="rounded-2xl bg-muted p-5">
+        <div className={cn('rounded-2xl p-5', r.status === 'completed' ? 'bg-stone-100' : 'bg-muted')}>
           <p className="mb-4 text-[11px] font-bold tracking-[0.1em] text-muted-foreground uppercase">Progress</p>
           {closed ? (
             <div className="rounded-2xl bg-status-declined-bg p-4 text-sm font-semibold text-status-declined">
@@ -233,6 +233,7 @@ export function RequestDetail({ request: r, box, balance, busy, error, onAction,
                   detail={s.at ? relativeTime(s.at) : i === currentIndex ? 'Up next' : 'Not yet'}
                   state={s.at ? 'done' : i === currentIndex ? 'current' : 'todo'}
                   last={i === stamps.length - 1}
+                  settled={r.status === 'completed'}
                 />
               ))}
             </ol>
