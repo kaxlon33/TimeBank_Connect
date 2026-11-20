@@ -19,26 +19,46 @@ interface Props {
   onBack: () => void
 }
 
-function Step({ label, detail, state, last, settled }: { label: string; detail: string; state: 'done' | 'current' | 'todo'; last: boolean; settled: boolean }) {
+function Step({
+  label,
+  detail,
+  state,
+  last,
+  settled,
+}: {
+  label: string
+  detail: string
+  state: 'done' | 'current' | 'todo'
+  last: boolean
+  settled: boolean
+}) {
   return (
-    <li className="flex gap-3.5">
-      <div className="flex flex-col items-center">
+    <li className="relative flex flex-1 flex-col items-center text-center">
+      {last ? null : (
         <span
+          aria-hidden="true"
           className={cn(
-            'grid size-[30px] shrink-0 place-items-center rounded-full text-xs font-bold transition-colors',
-            state === 'done' && (settled ? 'bg-stone-300 text-stone-600' : 'bg-wine-700 text-wine-on'),
-            state === 'current' && 'bg-brass text-wine-900 ring-4 ring-brass/25',
-            state === 'todo' && 'bg-stone-100 text-muted-foreground',
+            'absolute top-[15px] left-1/2 h-0.5 w-full rounded-full',
+            state === 'done' ? (settled ? 'bg-stone-300' : 'bg-wine-700') : 'bg-stone-200',
           )}
-        >
-          {state === 'done' ? <Check className="size-4" strokeWidth={3} aria-hidden="true" /> : <Clock className="size-3.5" aria-hidden="true" />}
-        </span>
-        {last ? null : <span className={cn('my-1 w-0.5 flex-1 rounded-full', state === 'done' ? (settled ? 'bg-stone-300' : 'bg-wine-700') : 'bg-stone-200')} />}
-      </div>
-      <div className={cn('pb-5', last && 'pb-0')}>
-        <p className={cn('text-[15px] leading-tight font-bold', (state === 'todo' || settled) && 'text-muted-foreground')}>{label}</p>
-        <p className="mt-0.5 text-[13px] text-muted-foreground">{detail}</p>
-      </div>
+        />
+      )}
+      <span
+        className={cn(
+          'relative grid size-[30px] shrink-0 place-items-center rounded-full text-xs font-bold transition-colors',
+          state === 'done' && (settled ? 'bg-stone-300 text-stone-600' : 'bg-wine-700 text-wine-on'),
+          state === 'current' && 'bg-brass text-wine-900 ring-4 ring-brass/25',
+          state === 'todo' && 'bg-stone-200 text-muted-foreground',
+        )}
+      >
+        {state === 'done' ? (
+          <Check className="size-4" strokeWidth={3} aria-hidden="true" />
+        ) : (
+          <Clock className="size-3.5" aria-hidden="true" />
+        )}
+      </span>
+      <p className={cn('mt-3 text-sm leading-tight font-bold', (state === 'todo' || settled) && 'text-muted-foreground')}>{label}</p>
+      <p className="mt-0.5 text-xs text-muted-foreground">{detail}</p>
     </li>
   )
 }
@@ -65,7 +85,9 @@ function ActionButton({
       disabled={disabled}
       className={cn(
         'press flex h-14 w-full shrink-0 items-center justify-center gap-2 rounded-2xl px-6 text-[15px] font-bold whitespace-nowrap transition-colors disabled:opacity-60 sm:w-auto',
-        tone === 'primary' ? 'bg-brass text-wine-900 hover:bg-brass/90 sm:min-w-52' : 'border border-white/30 bg-white/10 text-white hover:bg-white/20',
+        tone === 'primary'
+          ? 'bg-brass text-wine-900 hover:bg-brass/90 sm:min-w-52'
+          : 'border border-white/30 bg-white/10 text-white hover:bg-white/20',
       )}
     >
       {busy ? <Loader2 className="size-[18px] animate-spin" aria-hidden="true" /> : icon}
@@ -82,7 +104,10 @@ export function RequestDetail({ request: r, box, balance, busy, error, onAction,
 
   const stamps = [
     { label: 'Requested', at: r.created_at },
-    { label: 'Accepted', at: r.responded_at && r.status !== 'declined' ? r.responded_at : null },
+    {
+      label: 'Accepted',
+      at: r.responded_at && r.status !== 'declined' ? r.responded_at : null,
+    },
     { label: 'Session done', at: r.provider_done_at },
     { label: 'Credits paid', at: r.completed_at },
   ]
@@ -129,11 +154,20 @@ export function RequestDetail({ request: r, box, balance, busy, error, onAction,
       `Confirm and pay ${formatCredits(r.credits)} ${r.credits === 1 ? 'credit' : 'credits'}`,
       <Check className="size-[18px]" aria-hidden="true" />,
     )
-    note = balance >= r.credits ? `${first} says the session is done.` : `You need ${formatCredits(r.credits)} credits to confirm. You have ${formatCredits(balance)}.`
+    note =
+      balance >= r.credits
+        ? `${first} says the session is done.`
+        : `You need ${formatCredits(r.credits)} credits to confirm. You have ${formatCredits(balance)}.`
   }
   if (r.status === 'completed' && !r.reviewed_by_me) {
     actions = (
-      <ActionButton tone="primary" busy={false} disabled={false} onClick={onReview} icon={<Star className="size-[18px]" aria-hidden="true" />}>
+      <ActionButton
+        tone="primary"
+        busy={false}
+        disabled={false}
+        onClick={onReview}
+        icon={<Star className="size-[18px]" aria-hidden="true" />}
+      >
         Leave a review
       </ActionButton>
     )
@@ -167,57 +201,61 @@ export function RequestDetail({ request: r, box, balance, busy, error, onAction,
         </div>
       </div>
 
-      <div className="grid gap-6 p-5 sm:p-8 lg:grid-cols-[minmax(0,1fr)_260px]">
-        <div className="space-y-5">
-          <dl className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <div className="rounded-2xl bg-primary-soft p-4">
-              <dt className="flex items-center gap-1.5 text-[11px] font-bold tracking-[0.1em] text-wine-700 uppercase">
-                <Clock className="size-3.5" aria-hidden="true" />
-                Length
-              </dt>
-              <dd className="mt-2 flex items-baseline gap-1.5">
-                <span className="numeral text-[44px] text-wine-700">{formatCredits(r.hours)}</span>
-                <span className="text-sm font-bold text-wine-700">{r.hours === 1 ? 'hour' : 'hours'}</span>
-              </dd>
-            </div>
-            <div className="rounded-2xl bg-muted p-4">
-              <dt className="flex items-center gap-1.5 text-[11px] font-bold tracking-[0.1em] text-muted-foreground uppercase">
-                <CalendarDays className="size-3.5" aria-hidden="true" />
-                When
-              </dt>
-              <dd className="mt-2 text-[15px] leading-snug font-bold">
-                {r.proposed_at
-                  ? new Date(r.proposed_at).toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
-                  : 'Time to be agreed'}
-              </dd>
-            </div>
-            <div className="rounded-2xl bg-muted p-4">
-              <dt className="flex items-center gap-1.5 text-[11px] font-bold tracking-[0.1em] text-muted-foreground uppercase">
-                <MapPin className="size-3.5" aria-hidden="true" />
-                {box === 'received' ? 'Requested by' : 'Helper'}
-              </dt>
-              <dd className="mt-2 text-[15px] leading-snug font-bold">
-                {other.name}
-                {other.area ? <span className="block text-[13px] font-medium text-muted-foreground">{other.area.name}</span> : null}
-              </dd>
-            </div>
-          </dl>
-
-          <div className="flex items-start gap-3">
-            <Avatar name={r.requester.name} src={r.requester.avatar_url} size={40} />
-            <p
-              className={cn(
-                'flex-1 rounded-2xl rounded-tl-md border bg-card px-5 py-4 text-[15px] leading-relaxed',
-                !r.message && 'text-muted-foreground italic',
-              )}
-            >
-              {r.message ? `“${r.message}”` : 'No message was added.'}
-            </p>
+      <div className="space-y-4 p-5 sm:p-8">
+        <dl className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div className="rounded-2xl bg-primary-soft p-4">
+            <dt className="flex items-center gap-1.5 text-[11px] font-bold tracking-[0.1em] text-wine-700 uppercase">
+              <Clock className="size-3.5" aria-hidden="true" />
+              Length
+            </dt>
+            <dd className="mt-2 flex items-baseline gap-1.5">
+              <span className="numeral text-[44px] text-wine-700">{formatCredits(r.hours)}</span>
+              <span className="text-sm font-bold text-wine-700">{r.hours === 1 ? 'hour' : 'hours'}</span>
+            </dd>
           </div>
+          <div className="rounded-2xl bg-muted p-4">
+            <dt className="flex items-center gap-1.5 text-[11px] font-bold tracking-[0.1em] text-muted-foreground uppercase">
+              <CalendarDays className="size-3.5" aria-hidden="true" />
+              When
+            </dt>
+            <dd className="mt-2 text-[15px] leading-snug font-bold">
+              {r.proposed_at
+                ? new Date(r.proposed_at).toLocaleString('en-GB', {
+                    weekday: 'short',
+                    day: 'numeric',
+                    month: 'short',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })
+                : 'Time to be agreed'}
+            </dd>
+          </div>
+          <div className="rounded-2xl bg-muted p-4">
+            <dt className="flex items-center gap-1.5 text-[11px] font-bold tracking-[0.1em] text-muted-foreground uppercase">
+              <MapPin className="size-3.5" aria-hidden="true" />
+              {box === 'received' ? 'Requested by' : 'Helper'}
+            </dt>
+            <dd className="mt-2 text-[15px] leading-snug font-bold">
+              {other.name}
+              {other.area ? <span className="block text-[13px] font-medium text-muted-foreground">{other.area.name}</span> : null}
+            </dd>
+          </div>
+        </dl>
+
+        <div className="flex items-start gap-3">
+          <Avatar name={r.requester.name} src={r.requester.avatar_url} size={40} />
+          <p
+            className={cn(
+              'flex-1 rounded-2xl rounded-tl-md border bg-card px-5 py-4 text-[15px] leading-relaxed',
+              !r.message && 'text-muted-foreground italic',
+            )}
+          >
+            {r.message ? `“${r.message}”` : 'No message was added.'}
+          </p>
         </div>
 
-        <div className={cn('rounded-2xl p-5', r.status === 'completed' ? 'bg-stone-100' : 'bg-muted')}>
-          <p className="mb-4 text-[11px] font-bold tracking-[0.1em] text-muted-foreground uppercase">Progress</p>
+        <div className={cn('rounded-2xl p-5 sm:px-6', r.status === 'completed' ? 'bg-stone-100' : 'bg-muted')}>
+          <p className="mb-5 text-[11px] font-bold tracking-[0.1em] text-muted-foreground uppercase">Progress</p>
           {closed ? (
             <div className="rounded-2xl bg-status-declined-bg p-4 text-sm font-semibold text-status-declined">
               {r.status === 'declined'
@@ -225,7 +263,7 @@ export function RequestDetail({ request: r, box, balance, busy, error, onAction,
                 : `Cancelled${r.cancelled_at ? ` on ${formatDate(r.cancelled_at)}` : ''}. No credits moved.`}
             </div>
           ) : (
-            <ol>
+            <ol className="flex">
               {stamps.map((s, i) => (
                 <Step
                   key={s.label}
