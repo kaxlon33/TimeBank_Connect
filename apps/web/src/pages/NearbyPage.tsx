@@ -28,10 +28,7 @@ export function NearbyPage() {
   const home: Position | null = me.area ? { lat: me.area.latitude, lng: me.area.longitude, source: 'home' } : null
   const here = position ?? home
 
-  const helpers = useAsync(
-    () => (here ? api.getNearbyHelpers(here, radius) : Promise.resolve([])),
-    `${here?.lat}|${here?.lng}|${radius}`,
-  )
+  const helpers = useAsync(() => (here ? api.getNearbyHelpers(here, radius) : Promise.resolve([])), `${here?.lat}|${here?.lng}|${radius}`)
   const list = helpers.status === 'success' ? helpers.data : []
 
   useEffect(() => {
@@ -64,53 +61,18 @@ export function NearbyPage() {
     )
   }
 
-  const where = here?.source === 'device' ? 'your location' : me.area?.name ?? 'your area'
+  const where = here?.source === 'device' ? 'your location' : (me.area?.name ?? 'your area')
 
   return (
     <div className="mx-auto w-full max-w-[1400px] px-4 pt-2 pb-32 sm:px-8 lg:pb-16">
-      <header className="tile-in flex flex-col gap-5 pt-2 lg:flex-row lg:items-end lg:justify-between">
+      <header className="tile-in pt-2">
         <div>
           <p className="text-sm font-semibold text-muted-foreground" aria-live="polite">
-            {helpers.status === 'success' ? `${list.length} ${list.length === 1 ? 'helper' : 'helpers'} within ${radius} km of ${where}` : 'Looking around'}
+            Neighbours who can help, around {where}
           </p>
           <h1 className="font-heading mt-2 text-[clamp(2rem,4.2vw,3rem)] leading-[0.98] font-bold tracking-[-0.045em]">
             Helpers <span className="text-wine-700">near you</span>
           </h1>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-3">
-          <div role="radiogroup" aria-label="Search distance" className="flex gap-1 rounded-full bg-muted p-1">
-            {RADII.map((r) => (
-              <button
-                key={r}
-                type="button"
-                role="radio"
-                aria-checked={radius === r}
-                onClick={() => {
-                  setRadius(r)
-                  setSelected(null)
-                }}
-                className={cn(
-                  'h-10 rounded-full px-4 text-sm font-bold transition-colors',
-                  radius === r ? 'bg-wine-700 text-wine-on shadow-card' : 'text-muted-foreground hover:text-foreground',
-                )}
-              >
-                {r} km
-              </button>
-            ))}
-          </div>
-          <button
-            type="button"
-            onClick={useMyLocation}
-            disabled={locating}
-            className={cn(
-              'press flex h-12 items-center gap-2 rounded-2xl border px-4 text-sm font-bold disabled:opacity-60',
-              here?.source === 'device' ? 'border-wine-700 bg-primary-soft text-wine-700' : 'bg-card hover:bg-secondary',
-            )}
-          >
-            {locating ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : <Crosshair className="size-4" aria-hidden="true" />}
-            {here?.source === 'device' ? 'Using your location' : 'Use my location'}
-          </button>
         </div>
       </header>
 
@@ -137,8 +99,60 @@ export function NearbyPage() {
         </div>
       ) : (
         <div className="mt-6 grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_420px]">
-          <div className="tile-in relative h-[340px] overflow-hidden rounded-[28px] border bg-muted shadow-card sm:h-[440px] lg:sticky lg:top-24 lg:h-[600px]">
+          <div className="tile-in relative isolate h-[420px] overflow-hidden rounded-[32px] border bg-muted shadow-raised sm:h-[500px] lg:sticky lg:top-24 lg:h-[640px]">
             <NearbyMap centre={here} radiusKm={radius} helpers={list} selectedId={selected} onSelect={setSelected} />
+
+            <div className="pointer-events-none absolute inset-x-3 top-3 z-[500] flex items-start justify-between gap-2 sm:inset-x-4 sm:top-4">
+              <div
+                role="radiogroup"
+                aria-label="Search distance"
+                className="pointer-events-auto flex gap-0.5 rounded-full bg-card/92 p-1 shadow-raised backdrop-blur-md"
+              >
+                {RADII.map((r) => (
+                  <button
+                    key={r}
+                    type="button"
+                    role="radio"
+                    aria-checked={radius === r}
+                    onClick={() => {
+                      setRadius(r)
+                      setSelected(null)
+                    }}
+                    className={cn(
+                      'h-9 rounded-full px-3 text-[13px] font-bold transition-colors sm:px-4 sm:text-sm',
+                      radius === r ? 'bg-wine-700 text-wine-on shadow-card' : 'text-muted-foreground hover:text-foreground',
+                    )}
+                  >
+                    {r} km
+                  </button>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={useMyLocation}
+                disabled={locating}
+                aria-label={here?.source === 'device' ? 'Using your location' : 'Use my location'}
+                className={cn(
+                  'press pointer-events-auto flex h-11 shrink-0 items-center gap-2 rounded-full px-3.5 text-sm font-bold shadow-raised backdrop-blur-md disabled:opacity-60',
+                  here?.source === 'device' ? 'bg-wine-700 text-wine-on' : 'bg-card/92 hover:bg-card',
+                )}
+              >
+                {locating ? (
+                  <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                ) : (
+                  <Crosshair className="size-4" aria-hidden="true" />
+                )}
+                <span className="max-sm:sr-only">{here?.source === 'device' ? 'Using your location' : 'Use my location'}</span>
+              </button>
+            </div>
+
+            <div className="pointer-events-none absolute bottom-3 left-3 z-[500] sm:bottom-4 sm:left-4">
+              <span className="rounded-full bg-wine-900/90 px-4 py-2 text-[13px] font-bold text-white shadow-raised backdrop-blur-md">
+                {helpers.status === 'success'
+                  ? `${list.length} ${list.length === 1 ? 'helper' : 'helpers'} within ${radius} km`
+                  : 'Looking around…'}
+              </span>
+            </div>
           </div>
 
           <section aria-label="Helpers" className="space-y-3">
@@ -187,6 +201,7 @@ export function NearbyPage() {
                       else rows.current.delete(h.user.id)
                     }}
                     helper={h}
+                    closest={i === 0 && list.length > 1}
                     index={i}
                     selected={selected === h.user.id}
                     onSelect={() => setSelected(selected === h.user.id ? null : h.user.id)}
