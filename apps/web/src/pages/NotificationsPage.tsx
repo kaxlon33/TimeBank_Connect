@@ -175,7 +175,7 @@ export function NotificationsPage() {
                 <h2 className="px-3.5 pt-3 pb-2 text-[11px] font-bold tracking-[0.1em] text-muted-foreground uppercase sm:px-4">
                   {g.label}
                 </h2>
-                <ul>
+                <ul className="space-y-2">
                   {g.items.map((n, i) => (
                     <NotificationRow key={n.id} notification={n} index={i} onOpen={() => void open(n)} onToggleRead={() => toggleRead(n)} />
                   ))}

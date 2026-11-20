@@ -45,7 +45,11 @@ export function NotificationRow({ notification: n, index, onOpen, onToggleRead }
           unread ? 'bg-primary-soft/70 hover:bg-primary-soft' : 'hover:bg-muted/70',
         )}
       >
-        <button type="button" onClick={onOpen} className="press flex min-w-0 flex-1 items-center gap-4 rounded-2xl p-3.5 text-left sm:px-4">
+        <button
+          type="button"
+          onClick={onOpen}
+          className="press flex min-w-0 flex-1 items-center gap-4 rounded-2xl px-3.5 py-4 text-left sm:px-5"
+        >
           <span className={cn('grid size-12 shrink-0 place-items-center rounded-2xl', tints[n.type])}>
             <Icon className="size-5" aria-hidden="true" />
           </span>
@@ -56,9 +60,13 @@ export function NotificationRow({ notification: n, index, onOpen, onToggleRead }
           <span className="flex shrink-0 flex-col items-end gap-2">
             <span className="text-xs font-semibold text-muted-foreground">{relativeTime(n.created_at)}</span>
             {unread ? (
-              <span className="size-2.5 rounded-full bg-wine-700" role="img" aria-label="Unread" />
+              <span className="grid h-5 place-items-center" role="img" aria-label="Unread">
+                <span className="size-2.5 rounded-full bg-wine-700" />
+              </span>
             ) : (
-              <span className="size-2.5" aria-hidden="true" />
+              <span className="grid h-5 place-items-center text-status-accepted" role="img" aria-label="Read">
+                <CheckCheck className="size-[18px]" strokeWidth={2.5} aria-hidden="true" />
+              </span>
             )}
           </span>
         </button>
