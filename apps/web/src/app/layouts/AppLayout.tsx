@@ -98,7 +98,7 @@ export function AppLayout() {
             <BalanceChip balance={me.credit_balance} />
             <BellButton unread={unread} />
             <Link to="/profile" aria-label="Your profile" className="press rounded-full">
-              <Avatar name={me.name} size={44} />
+              <Avatar name={me.name} src={me.avatar_url} size={44} />
             </Link>
           </div>
         </div>

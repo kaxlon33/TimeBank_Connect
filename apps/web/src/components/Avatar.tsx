@@ -1,46 +1,5 @@
+import { lookFor, type Look } from '@/lib/avatarLooks'
 import { cn } from '@/lib/utils'
-
-type HairStyle = 'short' | 'long' | 'bob' | 'bun' | 'curly' | 'cap'
-
-interface Look {
-  bg: string
-  skin: string
-  hair: string
-  style: HairStyle
-  shirt: string
-  glasses?: boolean
-  beard?: boolean
-}
-
-/** Friendly people for members without a photo. Everyone gets the same one every time. */
-const AVATAR_LOOKS: Record<string, Look> = {
-  tom: { bg: '#cfe0f5', skin: '#f1c9a5', hair: '#2b2130', style: 'short', shirt: '#5e1a2b', glasses: true },
-  aye: { bg: '#f6d6dd', skin: '#e8b88f', hair: '#1c1418', style: 'long', shirt: '#b9577a' },
-  daniel: { bg: '#f5e3b8', skin: '#9b6b4a', hair: '#1b1311', style: 'curly', shirt: '#2e5e4e', beard: true },
-  sophie: { bg: '#d6ebdd', skin: '#f6d5bc', hair: '#d9a441', style: 'bob', shirt: '#3e5c9a' },
-  mei: { bg: '#d2e0f3', skin: '#f0c9a4', hair: '#241b22', style: 'bun', shirt: '#c9795b' },
-  priya: { bg: '#f2d4e5', skin: '#c98f65', hair: '#150f12', style: 'long', shirt: '#7a2236' },
-  kyaw: { bg: '#eadfd2', skin: '#d9a87d', hair: '#2a1c16', style: 'short', shirt: '#556b8f' },
-  hassan: { bg: '#f3ddb7', skin: '#b97a52', hair: '#1a1210', style: 'cap', shirt: '#3b3b4f', beard: true },
-  ryan: { bg: '#f8d9d9', skin: '#f1c9a5', hair: '#6b3e2a', style: 'short', shirt: '#8a8a8a' },
-  admin: { bg: '#d9b77e', skin: '#e8b88f', hair: '#2a0a14', style: 'bob', shirt: '#2a0a14' },
-  pick1: { bg: '#f9d9c9', skin: '#f6d5bc', hair: '#8a4b2a', style: 'bun', shirt: '#e08a6b' },
-  pick2: { bg: '#d5e8f2', skin: '#8d5e3f', hair: '#120c0a', style: 'curly', shirt: '#3f7fa6' },
-  pick3: { bg: '#e6daf3', skin: '#f0c9a4', hair: '#4a2f7a', style: 'long', shirt: '#7a5ac8' },
-  pick4: { bg: '#ddefd6', skin: '#e8b88f', hair: '#2a1c16', style: 'cap', shirt: '#4b8b5a' },
-  pick5: { bg: '#fbe3ec', skin: '#f6d5bc', hair: '#e5a9b8', style: 'bob', shirt: '#d86a90', glasses: true },
-  pick6: { bg: '#fff0c9', skin: '#c98f65', hair: '#1b1311', style: 'short', shirt: '#e0a93b', beard: true },
-}
-
-const FALLBACK = ['pick1', 'pick2', 'pick3', 'pick4', 'pick5', 'pick6']
-
-function lookFor(name: string): Look {
-  const first = name.trim().split(/\s+/)[0]?.toLowerCase() ?? ''
-  if (AVATAR_LOOKS[first]) return AVATAR_LOOKS[first]
-  let h = 0
-  for (const ch of name) h = (h * 31 + ch.charCodeAt(0)) >>> 0
-  return AVATAR_LOOKS[FALLBACK[h % FALLBACK.length]]
-}
 
 function Hair({ look }: { look: Look }) {
   const { hair, style } = look
@@ -72,17 +31,25 @@ interface Props {
   name: string
   size?: number
   className?: string
+  /** A photo (data or web address) or a chosen character such as "preset:pick3". */
+  src?: string | null
 }
 
-export function Avatar({ name, size = 40, className }: Props) {
-  const look = lookFor(name)
+export function Avatar({ name, size = 40, className, src }: Props) {
+  const isPhoto = Boolean(src) && !src?.startsWith('preset:')
+  const wrap = cn('inline-block shrink-0 overflow-hidden rounded-full', className)
+
+  if (isPhoto) {
+    return (
+      <span role="img" aria-label={name} className={wrap} style={{ width: size, height: size }}>
+        <img src={src as string} alt="" width={size} height={size} className="size-full object-cover" />
+      </span>
+    )
+  }
+
+  const look = lookFor(name, src)
   return (
-    <span
-      role="img"
-      aria-label={name}
-      className={cn('inline-block shrink-0 overflow-hidden rounded-full', className)}
-      style={{ width: size, height: size }}
-    >
+    <span role="img" aria-label={name} className={wrap} style={{ width: size, height: size }}>
       <svg viewBox="0 0 96 96" width={size} height={size} aria-hidden="true">
         <rect width="96" height="96" fill={look.bg} />
         <path d="M12 98c2-20 17-28 36-28s34 8 36 28z" fill={look.shirt} />
