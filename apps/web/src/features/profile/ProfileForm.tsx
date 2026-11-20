@@ -90,7 +90,7 @@ export function ProfileForm({ user }: { user: User }) {
           />
         </Field>
 
-        <div className="grid gap-5 sm:grid-cols-2">
+        <div className="space-y-5">
           <Field id="profile-country" label="Country" error={errors.country}>
             <CountrySelect
               id="profile-country"

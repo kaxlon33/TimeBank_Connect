@@ -162,12 +162,22 @@
     @apply border-border outline-ring/50;
   }
   html {
+    --popup-scale: 1;
     @apply font-sans;
     -webkit-text-size-adjust: 100%;
   }
   /* Laptop and desktop screens: a slightly smaller, denser scale so more fits on screen. */
   @media (min-width: 1024px) {
     html {
+      zoom: 0.85;
+      --popup-scale: 0.85;
+    }
+    /* Popups are placed from measured screen coordinates, so undo the page scale on their
+       positioning wrapper and apply it again to the content. Otherwise they open in the wrong place. */
+    [data-radix-popper-content-wrapper] {
+      zoom: calc(1 / 0.85);
+    }
+    [data-radix-popper-content-wrapper] > * {
       zoom: 0.85;
     }
   }
