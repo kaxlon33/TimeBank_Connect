@@ -4,6 +4,7 @@ import { BrowsePage } from '@/pages/BrowsePage'
 import { ComingSoonPage } from '@/pages/ComingSoonPage'
 import { LoginPage } from '@/pages/LoginPage'
 import { RegisterPage } from '@/pages/RegisterPage'
+import { SkillDetailPage } from '@/pages/SkillDetailPage'
 
 export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
@@ -12,7 +13,7 @@ export const router = createBrowserRouter([
     element: <AppLayout />,
     children: [
       { path: '/', element: <BrowsePage /> },
-      { path: '/skills/:id', element: <ComingSoonPage title="Skill details" /> },
+      { path: '/skills/:id', element: <SkillDetailPage /> },
       { path: '/nearby', element: <ComingSoonPage title="Nearby helpers" /> },
       { path: '/requests', element: <ComingSoonPage title="Requests" /> },
       { path: '/credits', element: <ComingSoonPage title="Credits" /> },
