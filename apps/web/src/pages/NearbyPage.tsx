@@ -1,13 +1,17 @@
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
-import { Crosshair, Loader2, MapPinOff, Users } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
+import { Crosshair, List, Loader2, MapPin, MapPinOff, Minus, Navigation, Plus, ShieldCheck, SlidersHorizontal, Users } from 'lucide-react'
+import { FilterPanel, RADII, type Radius } from '@/features/nearby/FilterPanel'
+import { HelperListItem } from '@/features/nearby/HelperListItem'
 import { HelperRow } from '@/features/nearby/HelperRow'
-import { NearbyMap } from '@/features/nearby/NearbyMap'
+import { matchesFilters } from '@/features/nearby/filters'
+import { NearbyMap, type NearbyMapHandle } from '@/features/nearby/NearbyMap'
+import { PreviewCard } from '@/features/nearby/PreviewCard'
 import { api, sessionStore } from '@/lib/api'
-import { useAsync } from '@/lib/hooks'
+import { useAsync, useMediaQuery } from '@/lib/hooks'
 import { cn } from '@/lib/utils'
 
-const RADII = [1, 3, 5, 10] as const
-type Radius = (typeof RADII)[number]
+type View = 'map' | 'list'
+type Sort = 'nearest' | 'rated'
 
 interface Position {
   lat: number
@@ -17,23 +21,42 @@ interface Position {
 
 export function NearbyPage() {
   const { me } = useSyncExternalStore(sessionStore.subscribe, sessionStore.getSnapshot)
-  const [radius, setRadius] = useState<Radius>(5)
+  const desktop = useMediaQuery('(min-width: 1024px)')
+  const mapRef = useRef<NearbyMapHandle>(null)
+  const rows = useRef(new Map<number | string, HTMLLIElement>())
+
+  const [view, setView] = useState<View>('map')
+  const [radius, setRadius] = useState<Radius>(10)
+  const [text, setText] = useState('')
+  const [chip, setChip] = useState<string | null>(null)
+  const [availableNow, setAvailableNow] = useState(false)
+  const [sort, setSort] = useState<Sort>('nearest')
+  const [selected, setSelected] = useState<number | string | null>(null)
+  const [point, setPoint] = useState<{ x: number; y: number } | null>(null)
   const [position, setPosition] = useState<Position | null>(null)
   const [locating, setLocating] = useState(false)
   const [locationError, setLocationError] = useState<string | null>(null)
-  const [selected, setSelected] = useState<number | string | null>(null)
-  const rows = useRef(new Map<number | string, HTMLLIElement>())
 
   // Start from the member's saved area. The device location is only used when they ask for it.
   const home: Position | null = me.area ? { lat: me.area.latitude, lng: me.area.longitude, source: 'home' } : null
   const here = position ?? home
 
-  const helpers = useAsync(() => (here ? api.getNearbyHelpers(here, radius) : Promise.resolve([])), `${here?.lat}|${here?.lng}|${radius}`)
-  const list = helpers.status === 'success' ? helpers.data : []
+  const fetched = useAsync(() => (here ? api.getNearbyHelpers(here, radius) : Promise.resolve([])), `${here?.lat}|${here?.lng}|${radius}`)
+
+  const list = useMemo(() => {
+    const base = fetched.status === 'success' ? fetched.data.filter((h) => matchesFilters(h, text, chip, availableNow)) : []
+    return sort === 'rated' ? [...base].sort((a, b) => (b.user.rating_avg ?? 0) - (a.user.rating_avg ?? 0)) : base
+  }, [fetched, text, chip, availableNow, sort])
+
+  const chosen = list.find((h) => h.user.id === selected) ?? null
+  const filtersOn = Boolean(text || chip || availableNow)
 
   useEffect(() => {
-    if (selected === null) return
-    rows.current.get(selected)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+    if (selected !== null && !chosen) setSelected(null)
+  }, [selected, chosen])
+
+  useEffect(() => {
+    if (selected !== null) rows.current.get(selected)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
   }, [selected])
 
   function useMyLocation() {
@@ -61,18 +84,72 @@ export function NearbyPage() {
     )
   }
 
-  const where = here?.source === 'device' ? 'your location' : (me.area?.name ?? 'your area')
+  function clearFilters() {
+    setText('')
+    setChip(null)
+    setAvailableNow(false)
+  }
+
+  const where = me.area?.name ?? 'your area'
+  const status = here?.source === 'device' ? 'Using your location' : `Using your saved area · ${where}`
+
+  const panel = (
+    <FilterPanel
+      text={text}
+      onText={setText}
+      radius={radius}
+      onRadius={(r) => {
+        setRadius(r)
+        setSelected(null)
+      }}
+      chip={chip}
+      onChip={setChip}
+      availableNow={availableNow}
+      onAvailableNow={setAvailableNow}
+    />
+  )
+
+  const countText =
+    fetched.status === 'success' ? `${list.length} ${list.length === 1 ? 'helper' : 'helpers'} within ${radius} km` : 'Looking around…'
 
   return (
     <div className="mx-auto w-full max-w-[1400px] px-4 pt-2 pb-32 sm:px-8 lg:pb-16">
-      <header className="tile-in pt-2">
-        <div>
-          <p className="text-sm font-semibold text-muted-foreground" aria-live="polite">
-            Neighbours who can help, around {where}
-          </p>
-          <h1 className="font-heading mt-2 text-[clamp(2rem,4.2vw,3rem)] leading-[0.98] font-bold tracking-[-0.045em]">
-            Helpers <span className="text-wine-700">near you</span>
-          </h1>
+      <header className="tile-in flex flex-col gap-4 pt-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
+          <h1 className="font-heading text-[clamp(2rem,4.2vw,3rem)] leading-[0.98] font-bold tracking-[-0.045em]">Helpers near you</h1>
+          <span
+            role="status"
+            className={cn(
+              'flex items-center gap-2 rounded-full px-3.5 py-2 text-[13px] font-bold',
+              here ? 'bg-status-completed-bg text-status-completed' : 'bg-muted text-muted-foreground',
+            )}
+          >
+            <span className={cn('size-2 rounded-full', here ? 'bg-status-completed' : 'bg-stone-300')} aria-hidden="true" />
+            {here ? status : 'Location needed'}
+          </span>
+        </div>
+        <div role="radiogroup" aria-label="View" className="flex gap-1 self-start rounded-full bg-card p-1 shadow-card sm:self-auto">
+          {(
+            [
+              { value: 'map', label: 'Map', icon: MapPin },
+              { value: 'list', label: 'List', icon: List },
+            ] as const
+          ).map(({ value, label, icon: Icon }) => (
+            <button
+              key={value}
+              type="button"
+              role="radio"
+              aria-checked={view === value}
+              onClick={() => setView(value)}
+              className={cn(
+                'flex h-10 items-center gap-2 rounded-full px-5 text-sm font-bold transition-colors',
+                view === value ? 'bg-wine-800 text-wine-on' : 'text-muted-foreground hover:text-foreground',
+              )}
+            >
+              <Icon className="size-4" aria-hidden="true" />
+              {label}
+            </button>
+          ))}
         </div>
       </header>
 
@@ -97,122 +174,214 @@ export function NearbyPage() {
             Use my location
           </button>
         </div>
-      ) : (
-        <div className="mt-6 grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_420px]">
-          <div className="tile-in relative isolate h-[420px] overflow-hidden rounded-[32px] border bg-muted shadow-raised sm:h-[500px] lg:sticky lg:top-24 lg:h-[640px]">
-            <NearbyMap centre={here} radiusKm={radius} helpers={list} selectedId={selected} onSelect={setSelected} />
+      ) : view === 'map' ? (
+        <div className="tile-in mt-5 lg:relative lg:h-[700px] lg:overflow-hidden lg:rounded-[32px] lg:border lg:shadow-raised">
+          <div className="relative isolate h-[440px] overflow-hidden rounded-[28px] border shadow-raised sm:h-[520px] lg:absolute lg:inset-0 lg:h-auto lg:rounded-none lg:border-0 lg:shadow-none">
+            <NearbyMap
+              ref={mapRef}
+              centre={here}
+              radiusKm={radius}
+              helpers={list}
+              selectedId={selected}
+              onSelect={setSelected}
+              onPoint={setPoint}
+            />
 
-            <div className="pointer-events-none absolute inset-x-3 top-3 z-[500] flex items-start justify-between gap-2 sm:inset-x-4 sm:top-4">
+            {chosen ? (
               <div
-                role="radiogroup"
-                aria-label="Search distance"
-                className="pointer-events-auto flex gap-0.5 rounded-full bg-card/92 p-1 shadow-raised backdrop-blur-md"
+                className={cn('absolute z-[600]', desktop ? 'w-[270px]' : 'inset-x-3 bottom-[76px] flex justify-center')}
+                style={desktop && point ? { left: point.x, top: point.y - 52, transform: 'translate(-50%, -100%)' } : undefined}
               >
-                {RADII.map((r) => (
-                  <button
-                    key={r}
-                    type="button"
-                    role="radio"
-                    aria-checked={radius === r}
-                    onClick={() => {
-                      setRadius(r)
-                      setSelected(null)
-                    }}
-                    className={cn(
-                      'h-9 rounded-full px-3 text-[13px] font-bold transition-colors sm:px-4 sm:text-sm',
-                      radius === r ? 'bg-wine-700 text-wine-on shadow-card' : 'text-muted-foreground hover:text-foreground',
-                    )}
-                  >
-                    {r} km
-                  </button>
-                ))}
+                <PreviewCard helper={chosen} />
               </div>
+            ) : null}
+
+            <div className="absolute bottom-3 left-1/2 z-[600] flex -translate-x-1/2 items-center gap-1 rounded-full bg-card/95 p-1.5 shadow-raised backdrop-blur-md sm:bottom-4">
               <button
                 type="button"
                 onClick={useMyLocation}
                 disabled={locating}
-                aria-label={here?.source === 'device' ? 'Using your location' : 'Use my location'}
-                className={cn(
-                  'press pointer-events-auto flex h-11 shrink-0 items-center gap-2 rounded-full px-3.5 text-sm font-bold shadow-raised backdrop-blur-md disabled:opacity-60',
-                  here?.source === 'device' ? 'bg-wine-700 text-wine-on' : 'bg-card/92 hover:bg-card',
-                )}
+                className="press flex h-11 items-center gap-2 rounded-full bg-wine-800 px-4 text-sm font-bold whitespace-nowrap text-wine-on hover:bg-wine-700 disabled:opacity-60"
               >
                 {locating ? (
                   <Loader2 className="size-4 animate-spin" aria-hidden="true" />
                 ) : (
                   <Crosshair className="size-4" aria-hidden="true" />
                 )}
-                <span className="max-sm:sr-only">{here?.source === 'device' ? 'Using your location' : 'Use my location'}</span>
+                {here.source === 'device' ? 'Your location' : where} · update
               </button>
-            </div>
-
-            <div className="pointer-events-none absolute bottom-3 left-3 z-[500] sm:bottom-4 sm:left-4">
-              <span className="rounded-full bg-wine-900/90 px-4 py-2 text-[13px] font-bold text-white shadow-raised backdrop-blur-md">
-                {helpers.status === 'success'
-                  ? `${list.length} ${list.length === 1 ? 'helper' : 'helpers'} within ${radius} km`
-                  : 'Looking around…'}
-              </span>
+              <button
+                type="button"
+                aria-label="Centre the map on me"
+                onClick={() => {
+                  setSelected(null)
+                  mapRef.current?.recenter()
+                }}
+                className="press grid size-11 place-items-center rounded-full hover:bg-secondary"
+              >
+                <Navigation className="size-4" aria-hidden="true" />
+              </button>
+              <span className="h-6 w-px bg-border" aria-hidden="true" />
+              <button
+                type="button"
+                aria-label="Zoom in"
+                onClick={() => mapRef.current?.zoomIn()}
+                className="press grid size-11 place-items-center rounded-full hover:bg-secondary"
+              >
+                <Plus className="size-4" aria-hidden="true" />
+              </button>
+              <button
+                type="button"
+                aria-label="Zoom out"
+                onClick={() => mapRef.current?.zoomOut()}
+                className="press grid size-11 place-items-center rounded-full hover:bg-secondary"
+              >
+                <Minus className="size-4" aria-hidden="true" />
+              </button>
             </div>
           </div>
 
-          <section aria-label="Helpers" className="space-y-3">
-            {helpers.status === 'loading' ? (
-              <div className="space-y-3" aria-busy="true">
-                {Array.from({ length: 3 }, (_, i) => (
-                  <div key={i} className="skeleton-shimmer h-[132px] rounded-[22px]" />
-                ))}
-              </div>
-            ) : helpers.status === 'error' ? (
-              <div role="alert" className="rounded-[28px] border bg-card p-8 text-center">
-                <p className="font-heading text-xl font-bold">We couldn’t load helpers</p>
-                <p className="mt-1 text-sm text-muted-foreground">{helpers.error.message}</p>
-                <button
-                  type="button"
-                  onClick={helpers.reload}
-                  className="press mt-4 h-11 rounded-2xl bg-wine-700 px-5 text-sm font-bold text-wine-on hover:bg-wine-600"
-                >
-                  Try again
-                </button>
-              </div>
-            ) : list.length === 0 ? (
-              <div className="rounded-[28px] border bg-card p-8 text-center shadow-card">
-                <span className="mx-auto grid size-14 place-items-center rounded-2xl bg-primary-soft text-wine-700">
-                  <Users className="size-6" aria-hidden="true" />
-                </span>
-                <p className="font-heading mt-4 text-xl font-bold tracking-[-0.02em]">No helpers within {radius} km</p>
-                <p className="mx-auto mt-1 max-w-xs text-sm text-muted-foreground">Try a wider distance to see more people around you.</p>
-                {radius < 10 ? (
+          <div className="mt-4 lg:absolute lg:top-4 lg:left-4 lg:z-[700] lg:mt-0 lg:w-[300px]">{panel}</div>
+
+          <aside
+            aria-label="Helpers"
+            className="mt-4 flex flex-col overflow-hidden rounded-[24px] bg-card/95 shadow-raised backdrop-blur-md lg:absolute lg:top-4 lg:right-4 lg:bottom-auto lg:max-h-[calc(100%-2rem)] lg:z-[700] lg:mt-0 lg:w-[350px]"
+          >
+            <div className="flex items-center justify-between gap-3 px-4 pt-4 pb-3">
+              <h2 className="font-heading text-lg font-bold tracking-[-0.02em]" aria-live="polite">
+                {countText}
+              </h2>
+              <button
+                type="button"
+                aria-label={sort === 'nearest' ? 'Sorted by nearest. Sort by top rated' : 'Sorted by top rated. Sort by nearest'}
+                aria-pressed={sort === 'rated'}
+                onClick={() => setSort(sort === 'nearest' ? 'rated' : 'nearest')}
+                className={cn(
+                  'press grid size-9 place-items-center rounded-xl hover:bg-secondary',
+                  sort === 'rated' && 'bg-primary-soft text-wine-700',
+                )}
+              >
+                <SlidersHorizontal className="size-4" aria-hidden="true" />
+              </button>
+            </div>
+
+            <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-3">
+              {fetched.status === 'loading' ? (
+                <div className="space-y-2.5" aria-busy="true">
+                  {Array.from({ length: 3 }, (_, i) => (
+                    <div key={i} className="skeleton-shimmer h-[78px] rounded-[20px]" />
+                  ))}
+                </div>
+              ) : fetched.status === 'error' ? (
+                <div role="alert" className="rounded-2xl bg-muted p-6 text-center">
+                  <p className="font-heading text-lg font-bold">We couldn’t load helpers</p>
                   <button
                     type="button"
-                    onClick={() => setRadius(10)}
-                    className="press mt-5 h-11 rounded-2xl bg-wine-700 px-5 text-sm font-bold text-wine-on hover:bg-wine-600"
+                    onClick={fetched.reload}
+                    className="press mt-3 h-10 rounded-xl bg-wine-700 px-4 text-sm font-bold text-wine-on hover:bg-wine-600"
                   >
-                    Search within 10 km
+                    Try again
                   </button>
-                ) : null}
-              </div>
-            ) : (
-              <ul className="space-y-3">
-                {list.map((h, i) => (
-                  <HelperRow
-                    key={h.user.id}
-                    ref={(el) => {
-                      if (el) rows.current.set(h.user.id, el)
-                      else rows.current.delete(h.user.id)
-                    }}
-                    helper={h}
-                    closest={i === 0 && list.length > 1}
-                    index={i}
-                    selected={selected === h.user.id}
-                    onSelect={() => setSelected(selected === h.user.id ? null : h.user.id)}
-                  />
-                ))}
-              </ul>
-            )}
-            <p className="px-1 pt-1 text-xs text-muted-foreground">
-              Helpers are shown near their neighbourhood, never at an exact address.
-            </p>
-          </section>
+                </div>
+              ) : list.length === 0 ? (
+                <div className="rounded-2xl bg-muted p-6 text-center">
+                  <span className="mx-auto grid size-12 place-items-center rounded-2xl bg-primary-soft text-wine-700">
+                    <Users className="size-5" aria-hidden="true" />
+                  </span>
+                  <p className="font-heading mt-3 text-lg font-bold">No helpers match</p>
+                  <p className="mx-auto mt-1 max-w-[220px] text-xs text-muted-foreground">Try a wider distance or fewer filters.</p>
+                  <div className="mt-4 flex flex-wrap justify-center gap-2">
+                    {filtersOn ? (
+                      <button
+                        type="button"
+                        onClick={clearFilters}
+                        className="press h-9 rounded-xl border bg-card px-3.5 text-xs font-bold hover:bg-secondary"
+                      >
+                        Clear filters
+                      </button>
+                    ) : null}
+                    {radius < RADII[RADII.length - 1] ? (
+                      <button
+                        type="button"
+                        onClick={() => setRadius(10)}
+                        className="press h-9 rounded-xl bg-wine-700 px-3.5 text-xs font-bold text-wine-on hover:bg-wine-600"
+                      >
+                        Search 10 km
+                      </button>
+                    ) : null}
+                  </div>
+                </div>
+              ) : (
+                <ul className="space-y-2.5">
+                  {list.map((h, i) => (
+                    <HelperListItem
+                      key={h.user.id}
+                      ref={(el) => {
+                        if (el) rows.current.set(h.user.id, el)
+                        else rows.current.delete(h.user.id)
+                      }}
+                      helper={h}
+                      index={i}
+                      selected={selected === h.user.id}
+                      onSelect={() => setSelected(selected === h.user.id ? null : h.user.id)}
+                    />
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            <div className="m-3 mt-0 flex items-start gap-3 rounded-2xl bg-primary-soft p-3.5">
+              <ShieldCheck className="mt-0.5 size-4 shrink-0 text-wine-700" aria-hidden="true" />
+              <p className="text-xs leading-relaxed text-wine-800">
+                <span className="block font-bold">Privacy first</span>
+                Distances use each member’s area, never an exact address.
+              </p>
+            </div>
+          </aside>
+        </div>
+      ) : (
+        <div className="mt-5 space-y-5">
+          <div className="max-w-sm">{panel}</div>
+          <p className="text-sm font-semibold text-muted-foreground" aria-live="polite">
+            {countText}
+          </p>
+          {fetched.status === 'loading' ? (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-busy="true">
+              {Array.from({ length: 3 }, (_, i) => (
+                <div key={i} className="skeleton-shimmer h-[230px] rounded-[24px]" />
+              ))}
+            </div>
+          ) : list.length === 0 ? (
+            <div className="rounded-[28px] border bg-card p-10 text-center shadow-card">
+              <p className="font-heading text-xl font-bold">No helpers match</p>
+              <p className="mt-1 text-sm text-muted-foreground">Try a wider distance or fewer filters.</p>
+              {filtersOn ? (
+                <button
+                  type="button"
+                  onClick={clearFilters}
+                  className="press mt-4 h-11 rounded-2xl bg-wine-700 px-5 text-sm font-bold text-wine-on hover:bg-wine-600"
+                >
+                  Clear filters
+                </button>
+              ) : null}
+            </div>
+          ) : (
+            <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {list.map((h, i) => (
+                <HelperRow
+                  key={h.user.id}
+                  helper={h}
+                  index={i}
+                  closest={i === 0 && sort === 'nearest' && list.length > 1}
+                  selected={false}
+                  onSelect={() => {
+                    setSelected(h.user.id)
+                    setView('map')
+                  }}
+                />
+              ))}
+            </ul>
+          )}
         </div>
       )}
     </div>

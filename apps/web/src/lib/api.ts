@@ -150,6 +150,13 @@ function findRequest(id: ID): HelpRequest {
 
 /* ---------- auth ---------- */
 
+/** True when one of the member's weekly slots covers the current time. */
+function isFreeNow(slots: AvailabilitySlot[]): boolean {
+  const now = new Date()
+  const hhmm = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
+  return slots.some((s) => s.weekday === now.getDay() && s.start_time <= hhmm && hhmm < s.end_time)
+}
+
 export const api = {
   async login(email: string, password: string): Promise<User> {
     await wait(600)
@@ -401,6 +408,13 @@ export const api = {
     }, 150)
   },
 
+  markNotificationUnread(id: ID): Promise<void> {
+    return mutate(() => {
+      const n = db.notifications.find((x) => x.id === id)
+      if (n) n.read_at = null
+    }, 150)
+  },
+
   markAllNotificationsRead(): Promise<void> {
     return mutate(() => {
       const now = new Date().toISOString()
@@ -463,6 +477,7 @@ export const api = {
               distance_km: distanceKm(position.lat, position.lng, lat, lng),
               lat,
               lng,
+              available_now: isFreeNow(u.availability),
               skills: db.skills
                 .filter((s) => s.user.id === u.id && s.status === 'active')
                 .map((s) => ({ id: s.id, title: s.title })),

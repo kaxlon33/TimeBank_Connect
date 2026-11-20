@@ -65,3 +65,16 @@ const STAGGER = [0, 40, 75, 105, 130, 150]
 export function staggerDelay(index: number): string {
   return `${STAGGER[Math.min(index, STAGGER.length - 1)]}ms`
 }
+
+/** Follows a CSS media query, for layout that cannot be done with classes alone. */
+export function useMediaQuery(query: string): boolean {
+  const [matches, setMatches] = useState(() => (typeof window === 'undefined' ? false : window.matchMedia(query).matches))
+  useEffect(() => {
+    const mq = window.matchMedia(query)
+    const update = () => setMatches(mq.matches)
+    update()
+    mq.addEventListener('change', update)
+    return () => mq.removeEventListener('change', update)
+  }, [query])
+  return matches
+}

@@ -172,6 +172,7 @@ export interface NearbyHelper {
   distance_km: number
   lat: number
   lng: number
+  available_now: boolean
   skills: Pick<Skill, 'id' | 'title'>[]
 }
 
