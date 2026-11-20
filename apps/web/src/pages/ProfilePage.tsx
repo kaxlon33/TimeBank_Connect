@@ -154,6 +154,14 @@ export function ProfilePage() {
             </ul>
           </section>
 
+          <section aria-labelledby="hours-title" className="rounded-[28px] bg-primary-soft p-6 sm:p-8">
+            <h2 id="hours-title" className="font-heading text-2xl font-bold tracking-[-0.03em] text-wine-800">
+              Your usual hours
+            </h2>
+            <p className="mt-1.5 mb-5 text-sm text-wine-700/80">Switch on the days you are free and choose your hours.</p>
+            <AvailabilityEditor key={me.id} slots={me.availability} />
+          </section>
+
           <section aria-labelledby="skills-title" className="rounded-[28px] border bg-card p-6 shadow-card sm:p-8">
             <div className="flex items-center justify-between gap-3">
               <h2 id="skills-title" className="font-heading text-2xl font-bold tracking-[-0.03em]">
@@ -220,14 +228,6 @@ export function ProfilePage() {
             <AvatarPicker name={me.name} value={me.avatar_url} onSelect={saveAvatar} />
             <hr className="my-7 border-border" />
             <ProfileForm key={me.id} user={me} />
-          </section>
-
-          <section aria-labelledby="hours-title" className="rounded-[28px] bg-primary-soft p-6 sm:p-7">
-            <h2 id="hours-title" className="font-heading text-2xl font-bold tracking-[-0.03em] text-wine-800">
-              Your usual hours
-            </h2>
-            <p className="mt-1.5 mb-5 text-sm text-wine-700/80">Switch on the days you are free and choose your hours.</p>
-            <AvailabilityEditor key={me.id} slots={me.availability} />
           </section>
         </div>
       </div>

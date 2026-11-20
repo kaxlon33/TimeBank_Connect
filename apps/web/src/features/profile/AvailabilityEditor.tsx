@@ -110,7 +110,7 @@ export function AvailabilityEditor({ slots }: { slots: AvailabilitySlot[] }) {
 
   return (
     <div>
-      <ul className="space-y-2" aria-label="Weekly availability">
+      <ul className="grid gap-2 md:grid-cols-2" aria-label="Weekly availability">
         {ORDER.map((day) => {
           const row = week[day]
           const bad = invalid.includes(day)
