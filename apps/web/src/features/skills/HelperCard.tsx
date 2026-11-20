@@ -1,16 +1,8 @@
-import { BadgeCheck, Heart, MapPin, ShieldCheck, Sparkles, Star, Users, type LucideIcon } from 'lucide-react'
+import { MapPin, Sparkles } from 'lucide-react'
 import { Avatar } from '@/components/Avatar'
+import { badgeIcons } from '@/features/profile/badges'
 import { whereLabel } from '@/lib/where'
-import type { BadgeCode, User } from '@/types'
-
-const badgeIcons: Record<BadgeCode, LucideIcon> = {
-  first_exchange: Sparkles,
-  helping_hand: Heart,
-  community_builder: Users,
-  top_rated: Star,
-  reliable: ShieldCheck,
-  trusted_member: BadgeCheck,
-}
+import type { User } from '@/types'
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
