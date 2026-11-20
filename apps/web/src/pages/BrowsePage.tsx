@@ -145,7 +145,7 @@ export function BrowsePage() {
 
   return (
     <div className="mx-auto w-full max-w-[1400px] px-4 pt-2 pb-32 sm:px-8 lg:pb-16">
-      <header className="flex flex-col gap-6 pt-2 lg:flex-row lg:items-end lg:justify-between lg:gap-10">
+      <header className="flex flex-col gap-6 pt-2">
         <div className="tile-in max-w-3xl">
           <p className="text-sm font-semibold text-muted-foreground">
             {greeting()}, {me.name.split(' ')[0]}
@@ -159,7 +159,7 @@ export function BrowsePage() {
         <form
           role="search"
           onSubmit={(e) => e.preventDefault()}
-          className="tile-in flex w-full items-center gap-2 rounded-[22px] border border-input bg-card p-2 pl-5 shadow-raised lg:max-w-[540px]"
+          className="tile-in flex w-full items-center gap-2 rounded-[22px] border border-input bg-card p-2 pl-5 shadow-raised lg:max-w-[660px]"
           style={{ '--delay': '60ms' } as React.CSSProperties}
         >
           <Search className="size-5 shrink-0 text-muted-foreground" aria-hidden="true" />
@@ -194,11 +194,11 @@ export function BrowsePage() {
         </form>
       </header>
 
-      <div className="mt-8 flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-4">
+      <div className="mt-8">
         <div
           role="group"
           aria-label="Categories"
-          className="-mx-4 flex min-w-0 gap-1.5 overflow-x-auto px-4 py-1 [scrollbar-width:none] sm:-mx-8 sm:px-8 lg:mx-0 lg:flex-1 lg:pr-10 lg:pl-0 lg:[mask-image:linear-gradient(to_right,black_calc(100%-40px),transparent)] [&::-webkit-scrollbar]:hidden"
+          className="-mx-4 flex gap-1.5 overflow-x-auto px-4 py-1 [mask-image:linear-gradient(to_right,black_calc(100%-40px),transparent)] [scrollbar-width:none] sm:-mx-8 sm:px-8 lg:mx-0 lg:px-0 lg:pr-10 [&::-webkit-scrollbar]:hidden"
         >
           <Chip active={category === ''} onClick={() => setCategory('')} icon={LayoutGrid}>
             All
@@ -220,8 +220,17 @@ export function BrowsePage() {
                 <span key={i} aria-hidden="true" className="skeleton-shimmer h-11 w-28 shrink-0 rounded-full" />
               ))}
         </div>
+      </div>
 
-        <div className="flex shrink-0 gap-2">
+      <div className="mt-5 mb-5 flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+        <p aria-live="polite" className="text-sm font-semibold text-muted-foreground">
+          {results.status === 'success'
+            ? `${items.length} ${items.length === 1 ? 'skill' : 'skills'} ${filtersActive ? 'found' : 'offered by your neighbours'}`
+            : results.status === 'error'
+              ? ''
+              : 'Finding skills…'}
+        </p>
+        <div className="flex gap-2">
           <FilterMenu
             label="Distance"
             icon={MapPin}
@@ -246,14 +255,6 @@ export function BrowsePage() {
           />
         </div>
       </div>
-
-      <p aria-live="polite" className="mt-6 mb-4 text-sm font-semibold text-muted-foreground">
-        {results.status === 'success'
-          ? `${items.length} ${items.length === 1 ? 'skill' : 'skills'} ${filtersActive ? 'found' : 'offered by your neighbours'}`
-          : results.status === 'error'
-            ? ''
-            : 'Finding skills…'}
-      </p>
 
       {results.status === 'loading' ? (
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4" aria-busy="true">
