@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { ArrowRight, Eye, EyeOff, Loader2, Mail, ShieldCheck } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { AuthScene } from '@/features/auth/AuthScene'
@@ -13,12 +13,14 @@ const demo = [
 
 export function LoginPage() {
   const navigate = useNavigate()
+  const location = useLocation()
+  const state = location.state as { from?: string; notice?: string } | null
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [show, setShow] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [notice, setNotice] = useState<string | null>(null)
+  const [notice, setNotice] = useState<string | null>(state?.notice ?? null)
   const [errs, setErrs] = useState<{ email?: string; password?: string }>({})
 
   const submit = async (e: FormEvent) => {
@@ -33,7 +35,7 @@ export function LoginPage() {
     setError(null)
     try {
       const user = await api.login(email, password)
-      navigate(user.role === 'admin' ? '/admin' : '/')
+      navigate(user.role === 'admin' ? '/admin' : (state?.from ?? '/'), { replace: true })
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Something went wrong. Please try again.')
     } finally {
@@ -127,9 +129,9 @@ export function LoginPage() {
             <label htmlFor="login-password" className="text-sm font-semibold">
               Password
             </label>
-            <a href="#" onClick={(e) => e.preventDefault()} className="inline-flex min-h-11 items-center text-sm font-semibold text-wine-700 hover:underline lg:min-h-0">
+            <Link to="/forgot-password" className="inline-flex min-h-11 items-center text-sm font-semibold text-wine-700 hover:underline lg:min-h-0">
               Forgot?
-            </a>
+            </Link>
           </div>
           <div className="relative">
             <Input

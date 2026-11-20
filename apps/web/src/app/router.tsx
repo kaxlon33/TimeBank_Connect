@@ -1,7 +1,9 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { AppLayout } from './layouts/AppLayout'
+import { RedirectIfSignedIn, RequireAuth } from './RequireAuth'
 import { BrowsePage } from '@/pages/BrowsePage'
 import { CreditsPage } from '@/pages/CreditsPage'
+import { ForgotPasswordPage } from '@/pages/ForgotPasswordPage'
 import { HoursPage } from '@/pages/HoursPage'
 import { LoginPage } from '@/pages/LoginPage'
 import { MySkillsPage } from '@/pages/MySkillsPage'
@@ -10,13 +12,20 @@ import { NotificationsPage } from '@/pages/NotificationsPage'
 import { ProfilePage } from '@/pages/ProfilePage'
 import { RegisterPage } from '@/pages/RegisterPage'
 import { RequestsPage } from '@/pages/RequestsPage'
+import { ResetPasswordPage } from '@/pages/ResetPasswordPage'
 import { SkillDetailPage } from '@/pages/SkillDetailPage'
 
 export const router = createBrowserRouter([
-  { path: '/login', element: <LoginPage /> },
-  { path: '/register', element: <RegisterPage /> },
+  { path: '/login', element: <RedirectIfSignedIn><LoginPage /></RedirectIfSignedIn> },
+  { path: '/register', element: <RedirectIfSignedIn><RegisterPage /></RedirectIfSignedIn> },
+  { path: '/forgot-password', element: <RedirectIfSignedIn><ForgotPasswordPage /></RedirectIfSignedIn> },
+  { path: '/reset-password', element: <RedirectIfSignedIn><ResetPasswordPage /></RedirectIfSignedIn> },
   {
-    element: <AppLayout />,
+    element: (
+      <RequireAuth>
+        <AppLayout />
+      </RequireAuth>
+    ),
     children: [
       { path: '/', element: <BrowsePage /> },
       { path: '/skills/:id', element: <SkillDetailPage /> },

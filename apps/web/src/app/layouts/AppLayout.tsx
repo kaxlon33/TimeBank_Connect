@@ -1,10 +1,11 @@
 import { useSyncExternalStore } from 'react'
 import { Link, NavLink, Outlet } from 'react-router-dom'
-import { ArrowLeftRight, Bell, Clock, Home, User } from 'lucide-react'
-import { Avatar } from '@/components/Avatar'
+import { ArrowLeftRight, Bell, Clock, Home, User, WifiOff } from 'lucide-react'
+import { AccountMenu } from '@/components/AccountMenu'
 import { Logo, LogoMark } from '@/components/Logo'
 import { sessionStore } from '@/lib/api'
 import { formatCredits } from '@/lib/format'
+import { useOnline } from '@/lib/pwa'
 import { cn } from '@/lib/utils'
 
 const desktopLinks = [
@@ -54,6 +55,7 @@ function BellButton({ unread }: { unread: number }) {
 
 export function AppLayout() {
   const { me, unread } = useSyncExternalStore(sessionStore.subscribe, sessionStore.getSnapshot)
+  const online = useOnline()
 
   return (
     <div className="min-h-dvh bg-background">
@@ -97,12 +99,20 @@ export function AppLayout() {
           <div className="flex items-center gap-2.5">
             <BalanceChip balance={me.credit_balance} />
             <BellButton unread={unread} />
-            <Link to="/profile" aria-label="Your profile" className="press rounded-full">
-              <Avatar name={me.name} src={me.avatar_url} size={44} />
-            </Link>
+            <AccountMenu me={me} />
           </div>
         </div>
       </header>
+
+      {online ? null : (
+        <div
+          role="status"
+          className="mx-auto mb-2 flex w-fit items-center gap-2 rounded-full bg-status-pending-bg px-4 py-2 text-[13px] font-bold text-status-pending"
+        >
+          <WifiOff className="size-4" aria-hidden="true" />
+          You are offline. Some things may not load.
+        </div>
+      )}
 
       <main id="main" tabIndex={-1} className="outline-none">
         <Outlet />

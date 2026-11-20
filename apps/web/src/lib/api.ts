@@ -42,6 +42,7 @@ import {
   transactions,
 } from '@/mocks/activity'
 import { distanceKm } from './format'
+import { readStored, removeStored, writeStored } from './storage'
 
 export class ApiError extends Error {
   status: number
@@ -74,6 +75,8 @@ const newId = () => ++nextId
 export interface SessionSnapshot {
   me: User
   unread: number
+  /** True while a member is logged in. It is remembered in the browser so a refresh keeps them logged in. */
+  signedIn: boolean
 }
 
 const listeners = new Set<() => void>()
@@ -82,10 +85,17 @@ const me = () => {
   if (!user) throw new Error('Signed-in mock user missing')
   return user
 }
-let snapshot: SessionSnapshot = { me: me(), unread: db.notifications.filter((n) => !n.read_at).length }
+let signedIn = readStored<{ email: string } | null>('session', null) !== null
+let snapshot: SessionSnapshot = { me: me(), unread: db.notifications.filter((n) => !n.read_at).length, signedIn }
+
+function setSignedIn(value: boolean, email?: string) {
+  signedIn = value
+  if (value) writeStored('session', { email })
+  else removeStored('session')
+}
 
 function emit() {
-  snapshot = { me: { ...me() }, unread: db.notifications.filter((n) => !n.read_at).length }
+  snapshot = { me: { ...me() }, unread: db.notifications.filter((n) => !n.read_at).length, signedIn }
   listeners.forEach((l) => l())
 }
 
@@ -150,6 +160,10 @@ function findRequest(id: ID): HelpRequest {
 
 /* ---------- auth ---------- */
 
+/** The demo reset link carries this token. The real API will send a one-time token by email. */
+export const DEMO_RESET_TOKEN = 'demo-reset-token'
+const passwordChanges = new Map<string, string>()
+
 /** True when one of the member's weekly slots covers the current time. */
 function isFreeNow(slots: AvailabilitySlot[]): boolean {
   const now = new Date()
@@ -161,9 +175,31 @@ export const api = {
   async login(email: string, password: string): Promise<User> {
     await wait(600)
     const user = db.users.find((u) => u.email.toLowerCase() === email.trim().toLowerCase())
-    if (!user || password !== 'password') throw new ApiError('Email or password is incorrect', 422)
+    const expected = (user && passwordChanges.get(user.email.toLowerCase())) ?? 'password'
+    if (!user || password !== expected) throw new ApiError('Email or password is incorrect', 422)
     if (user.status === 'suspended') throw new ApiError('This account has been suspended. Contact the TimeBank team for help.', 403)
+    setSignedIn(true, user.email)
+    emit()
     return structuredClone(user)
+  },
+
+  async logout(): Promise<void> {
+    await wait(250)
+    setSignedIn(false)
+    emit()
+  },
+
+  /** Always succeeds, so nobody can use this to find out which emails have an account. */
+  async requestPasswordReset(email: string): Promise<{ email: string }> {
+    await wait(700)
+    return { email: email.trim() }
+  },
+
+  async resetPassword(input: { token: string; email: string; password: string }): Promise<void> {
+    await wait(700)
+    if (input.token !== DEMO_RESET_TOKEN) throw new ApiError('This reset link has expired. Ask for a new one.', 422)
+    if (input.password.length < 8) throw new ApiError('Please fix the highlighted fields.', 422, { password: 'Use at least 8 characters.' })
+    passwordChanges.set(input.email.trim().toLowerCase(), input.password)
   },
 
   async checkEmail(email: string): Promise<{ available: boolean }> {
@@ -176,6 +212,8 @@ export const api = {
     if (db.users.some((u) => u.email.toLowerCase() === input.email.toLowerCase())) {
       throw new ApiError('Please fix the highlighted fields.', 422, { email: 'This email is already registered.' })
     }
+    setSignedIn(true, input.email)
+    emit()
     return { ...structuredClone(me()), name: input.name, email: input.email, credit_balance: db.settings.starter_credit }
   },
 
