@@ -165,6 +165,12 @@
     @apply font-sans;
     -webkit-text-size-adjust: 100%;
   }
+  /* Laptop and desktop screens: a slightly smaller, denser scale so more fits on screen. */
+  @media (min-width: 1024px) {
+    html {
+      zoom: 0.85;
+    }
+  }
   body {
     @apply bg-background text-foreground antialiased;
     min-height: 100dvh;
