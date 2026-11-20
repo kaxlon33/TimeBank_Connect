@@ -204,7 +204,7 @@ export function AdminMembersPage() {
             className="h-12 w-full rounded-2xl border bg-card pr-4 pl-11 text-sm outline-none placeholder:text-muted-foreground focus-visible:border-wine-600 focus-visible:ring-4 focus-visible:ring-wine-600/15 [&::-webkit-search-cancel-button]:hidden"
           />
         </div>
-        <div role="group" aria-label="Filter by status" className="flex gap-1 self-start rounded-full bg-card p-1 shadow-card sm:self-auto">
+        <div role="group" aria-label="Filter by status" className="flex max-w-full gap-1 self-start overflow-x-auto rounded-full bg-card p-1 shadow-card [scrollbar-width:none] sm:self-auto [&::-webkit-scrollbar]:hidden">
           {(
             [
               { value: 'all', label: 'All', dot: null },
@@ -219,7 +219,7 @@ export function AdminMembersPage() {
               aria-pressed={filter === f.value}
               onClick={() => setFilter(f.value)}
               className={cn(
-                'flex h-10 items-center gap-2 rounded-full px-4 text-sm font-bold transition-colors',
+                'flex h-10 shrink-0 items-center gap-2 rounded-full px-4 text-sm font-bold transition-colors',
                 filter === f.value ? 'bg-wine-800 text-wine-on' : 'text-muted-foreground hover:text-foreground',
               )}
             >
