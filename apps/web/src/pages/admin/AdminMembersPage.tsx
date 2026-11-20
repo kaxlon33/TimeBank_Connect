@@ -22,19 +22,18 @@ function presenceOf(m: AdminMember): Presence {
   return days >= INACTIVE_AFTER_DAYS ? 'inactive' : 'active'
 }
 
-const presenceStyle: Record<Presence, { label: string; chip: string; dot: string }> = {
-  active: { label: 'Active', chip: 'bg-status-completed-bg text-status-completed', dot: 'bg-status-completed' },
-  inactive: { label: 'Inactive', chip: 'bg-muted text-muted-foreground', dot: 'bg-stone-400' },
-  suspended: { label: 'Suspended', chip: 'bg-status-declined-bg text-status-declined', dot: 'bg-status-declined' },
-}
+const presenceLabel: Record<Presence, string> = { active: 'Active', inactive: 'Inactive', suspended: 'Suspended' }
+const dotColour: Record<Presence, string> = { active: 'bg-emerald-500', inactive: 'bg-red-500', suspended: 'bg-stone-400' }
 
-function StatusChip({ presence }: { presence: Presence }) {
-  const st = presenceStyle[presence]
+/** A small round light: green for active, red for inactive, grey for suspended. */
+function Dot({ presence, className }: { presence: Presence; className?: string }) {
   return (
-    <span className={cn('inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold', st.chip)}>
-      <span className={cn('size-1.5 rounded-full', st.dot)} aria-hidden="true" />
-      {st.label}
-    </span>
+    <span
+      role="img"
+      aria-label={presenceLabel[presence]}
+      title={presenceLabel[presence]}
+      className={cn('block rounded-full', dotColour[presence], className)}
+    />
   )
 }
 
@@ -208,10 +207,10 @@ export function AdminMembersPage() {
         <div role="group" aria-label="Filter by status" className="flex gap-1 self-start rounded-full bg-card p-1 shadow-card sm:self-auto">
           {(
             [
-              { value: 'all', label: 'All' },
-              { value: 'active', label: 'Active' },
-              { value: 'inactive', label: count('inactive') ? `Inactive · ${count('inactive')}` : 'Inactive' },
-              { value: 'suspended', label: count('suspended') ? `Suspended · ${count('suspended')}` : 'Suspended' },
+              { value: 'all', label: 'All', dot: null },
+              { value: 'active', label: 'Active', dot: 'active' },
+              { value: 'inactive', label: 'Inactive', dot: 'inactive' },
+              { value: 'suspended', label: 'Suspended', dot: 'suspended' },
             ] as const
           ).map((f) => (
             <button
@@ -220,11 +219,13 @@ export function AdminMembersPage() {
               aria-pressed={filter === f.value}
               onClick={() => setFilter(f.value)}
               className={cn(
-                'h-10 rounded-full px-4 text-sm font-bold transition-colors',
+                'flex h-10 items-center gap-2 rounded-full px-4 text-sm font-bold transition-colors',
                 filter === f.value ? 'bg-wine-800 text-wine-on' : 'text-muted-foreground hover:text-foreground',
               )}
             >
+              {f.dot ? <span className={cn('size-2.5 rounded-full', dotColour[f.dot])} aria-hidden="true" /> : null}
               {f.label}
+              {f.dot && count(f.dot) > 0 ? <span className="text-xs opacity-70">{count(f.dot)}</span> : null}
             </button>
           ))}
         </div>
@@ -233,14 +234,13 @@ export function AdminMembersPage() {
       <section aria-label="Members" className="rounded-[28px] border bg-card shadow-card">
         <div
           aria-hidden="true"
-          className="hidden grid-cols-[minmax(0,2fr)_minmax(0,1fr)_80px_80px_130px_120px_130px] items-center gap-4 border-b px-6 py-3.5 text-[11px] font-bold tracking-[0.1em] text-muted-foreground uppercase lg:grid"
+          className="hidden grid-cols-[minmax(0,2fr)_minmax(0,1fr)_80px_80px_130px_130px] items-center gap-4 border-b px-6 py-3.5 text-[11px] font-bold tracking-[0.1em] text-muted-foreground uppercase lg:grid"
         >
           <span>Member</span>
           <span>Area</span>
           <span className="text-right">Sessions</span>
           <span className="text-right">Credits</span>
           <span>Last active</span>
-          <span>Status</span>
           <span />
         </div>
 
@@ -276,10 +276,13 @@ export function AdminMembersPage() {
               <li
                 key={m.id}
                 style={{ '--delay': staggerDelay(i) } as CSSProperties}
-                className="tile-in grid items-center gap-x-4 gap-y-3 px-4 py-4 sm:px-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_80px_80px_130px_120px_130px]"
+                className="tile-in grid items-center gap-x-4 gap-y-3 px-4 py-4 sm:px-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_80px_80px_130px_130px]"
               >
                 <div className="flex min-w-0 items-center gap-3.5">
-                  <Avatar name={m.name} src={m.avatar_url} size={46} className="shrink-0" />
+                  <span className="relative shrink-0">
+                    <Avatar name={m.name} src={m.avatar_url} size={46} />
+                    <Dot presence={presenceOf(m)} className="absolute right-0 bottom-0 size-3.5 ring-2 ring-card" />
+                  </span>
                   <div className="min-w-0">
                     <p className="truncate text-[15px] font-bold">{m.name}</p>
                     <p className="truncate text-[13px] text-muted-foreground">{m.email}</p>
@@ -301,13 +304,10 @@ export function AdminMembersPage() {
                   <span className="mr-1.5 text-xs font-bold text-muted-foreground uppercase lg:hidden">Credits</span>
                   {formatCredits(m.credit_balance)} h
                 </p>
-                <p className={cn('text-sm', presenceOf(m) === 'inactive' ? 'font-semibold text-status-pending' : 'text-muted-foreground')}>
+                <p className="text-sm text-muted-foreground">
                   <span className="mr-1.5 text-xs font-bold text-muted-foreground uppercase lg:hidden">Last active</span>
                   {relativeTime(m.last_active_at)}
                 </p>
-                <div>
-                  <StatusChip presence={presenceOf(m)} />
-                </div>
                 <div className="lg:text-right">
                   <button
                     type="button"
