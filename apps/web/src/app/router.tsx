@@ -3,6 +3,7 @@ import { AppLayout } from './layouts/AppLayout'
 import { BrowsePage } from '@/pages/BrowsePage'
 import { ComingSoonPage } from '@/pages/ComingSoonPage'
 import { LoginPage } from '@/pages/LoginPage'
+import { ProfilePage } from '@/pages/ProfilePage'
 import { RegisterPage } from '@/pages/RegisterPage'
 import { RequestsPage } from '@/pages/RequestsPage'
 import { SkillDetailPage } from '@/pages/SkillDetailPage'
@@ -19,7 +20,7 @@ export const router = createBrowserRouter([
       { path: '/requests', element: <RequestsPage /> },
       { path: '/credits', element: <ComingSoonPage title="Credits" /> },
       { path: '/my-skills', element: <ComingSoonPage title="My skills" /> },
-      { path: '/profile', element: <ComingSoonPage title="Profile" /> },
+      { path: '/profile', element: <ProfilePage /> },
       { path: '/notifications', element: <ComingSoonPage title="Notifications" /> },
     ],
   },
