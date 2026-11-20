@@ -244,6 +244,7 @@ export const api = {
         description: input.description,
         category: { id: category.id, name: category.name, slug: category.slug },
         status: 'active',
+        image_url: input.image_url ?? null,
         user: owner ?? { ...me(), avatar_url: null },
         created_at: new Date().toISOString(),
         report_count: 0,
@@ -263,6 +264,7 @@ export const api = {
         description: input.description,
         category: { id: category.id, name: category.name, slug: category.slug },
         status: input.status ?? skill.status,
+        ...(input.image_url !== undefined ? { image_url: input.image_url } : {}),
       })
       return skill
     })

@@ -1,6 +1,7 @@
-import { useId, useState } from 'react'
-import { Check, Loader2, X } from 'lucide-react'
+import { useId, useRef, useState } from 'react'
+import { Check, ImagePlus, Loader2, RotateCcw, X } from 'lucide-react'
 import { Dialog } from 'radix-ui'
+import { resizeToCover } from '@/lib/image'
 import { skillImage } from '@/lib/skillImages'
 import { cn } from '@/lib/utils'
 import type { ID, Skill, SkillCategory, SkillInput } from '@/types'
@@ -26,7 +27,13 @@ export function SkillFormDialog({ open, onOpenChange, skill, categories, onSubmi
         <Dialog.Overlay className="fixed inset-0 z-50 bg-wine-900/55 backdrop-blur-sm data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0" />
         <Dialog.Content className="fixed inset-x-0 bottom-0 z-50 mx-auto max-h-[92dvh] w-full max-w-xl overflow-y-auto rounded-t-[32px] bg-popover shadow-raised outline-none data-[state=closed]:animate-out data-[state=closed]:slide-out-to-bottom data-[state=open]:animate-in data-[state=open]:slide-in-from-bottom sm:inset-auto sm:top-1/2 sm:left-1/2 sm:max-h-[90dvh] sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-[32px] sm:data-[state=closed]:zoom-out-95 sm:data-[state=open]:zoom-in-95">
           {/* Remount per skill so the form starts from that skill's values. */}
-          <SkillForm key={skill?.id ?? 'new'} skill={skill} categories={categories} onSubmit={onSubmit} onClose={() => onOpenChange(false)} />
+          <SkillForm
+            key={skill?.id ?? 'new'}
+            skill={skill}
+            categories={categories}
+            onSubmit={onSubmit}
+            onClose={() => onOpenChange(false)}
+          />
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
@@ -51,9 +58,26 @@ function SkillForm({
   const [errors, setErrors] = useState<Errors>({})
   const [busy, setBusy] = useState(false)
   const [failed, setFailed] = useState<string | null>(null)
+  const [image, setImage] = useState<string | null>(skill?.image_url ?? null)
+  const [imageError, setImageError] = useState<string | null>(null)
+  const [reading, setReading] = useState(false)
+  const fileInput = useRef<HTMLInputElement>(null)
 
   const category = categories.find((c) => c.id === categoryId)
-  const picture = skillImage({ title, category: category ? { slug: category.slug } : undefined })
+  const picture = skillImage({ title, category: category ? { slug: category.slug } : undefined, image_url: image })
+
+  async function onFile(file: File | undefined) {
+    if (!file) return
+    setReading(true)
+    setImageError(null)
+    try {
+      setImage(await resizeToCover(file))
+    } catch (err) {
+      setImageError(err instanceof Error ? err.message : 'We could not use that picture.')
+    } finally {
+      setReading(false)
+    }
+  }
 
   function validate(): Errors {
     const e: Errors = {}
@@ -70,7 +94,7 @@ function SkillForm({
     setBusy(true)
     setFailed(null)
     try {
-      await onSubmit({ title: title.trim(), category_id: categoryId, description: description.trim() })
+      await onSubmit({ title: title.trim(), category_id: categoryId, description: description.trim(), image_url: image })
       onClose()
     } catch (err) {
       setFailed(err instanceof Error ? err.message : 'We could not save your skill. Please try again.')
@@ -88,7 +112,13 @@ function SkillForm({
       }}
     >
       <div className="relative isolate flex h-44 flex-col justify-end overflow-hidden bg-wine-800 p-6 text-white sm:h-52">
-        <img src={picture} alt="" width={960} height={720} className="absolute inset-0 -z-20 size-full object-cover transition-opacity duration-300" />
+        <img
+          src={picture}
+          alt=""
+          width={960}
+          height={720}
+          className="absolute inset-0 -z-20 size-full object-cover transition-opacity duration-300"
+        />
         <div className="absolute inset-0 -z-10 bg-gradient-to-t from-wine-900/92 via-wine-900/35 to-transparent" />
         <Dialog.Close
           aria-label="Close"
@@ -96,15 +126,60 @@ function SkillForm({
         >
           <X className="size-5" aria-hidden="true" />
         </Dialog.Close>
+        <div className="absolute top-4 left-4 flex gap-2">
+          <button
+            type="button"
+            onClick={() => fileInput.current?.click()}
+            disabled={reading}
+            className="press flex h-10 items-center gap-2 rounded-full border border-white/25 bg-wine-900/55 px-4 text-sm font-bold backdrop-blur-md hover:bg-wine-900/75 disabled:opacity-60"
+          >
+            {reading ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : <ImagePlus className="size-4" aria-hidden="true" />}
+            {image ? 'Change picture' : 'Upload picture'}
+          </button>
+          {image ? (
+            <button
+              type="button"
+              onClick={() => {
+                setImage(null)
+                setImageError(null)
+              }}
+              className="press flex h-10 items-center gap-2 rounded-full border border-white/25 bg-wine-900/55 px-4 text-sm font-bold backdrop-blur-md hover:bg-wine-900/75"
+            >
+              <RotateCcw className="size-4" aria-hidden="true" />
+              Automatic
+            </button>
+          ) : null}
+        </div>
+        <input
+          ref={fileInput}
+          type="file"
+          accept="image/*"
+          className="sr-only"
+          tabIndex={-1}
+          aria-label="Upload a picture for this skill"
+          onChange={(e) => {
+            void onFile(e.target.files?.[0])
+            e.target.value = ''
+          }}
+        />
         <Dialog.Title className="font-heading text-[clamp(1.5rem,4vw,2rem)] leading-[1.05] font-bold tracking-[-0.04em] text-balance">
           {title.trim() || (skill ? 'Edit your skill' : 'A new skill')}
         </Dialog.Title>
         <Dialog.Description className="mt-1 text-sm text-wine-on-muted">
-          {category ? `${category.name} · the picture follows your title` : 'The picture follows your title and category'}
+          {image
+            ? 'Your own picture'
+            : category
+              ? `${category.name} · the picture follows your title`
+              : 'The picture follows your title and category'}
         </Dialog.Description>
       </div>
 
       <div className="space-y-5 p-6 sm:p-8">
+        {imageError ? (
+          <p role="alert" className="text-sm font-semibold text-negative">
+            {imageError}
+          </p>
+        ) : null}
         <div className="space-y-1.5">
           <div className="flex items-baseline justify-between">
             <label htmlFor={`${id}-title`} className="text-sm font-semibold">
@@ -153,7 +228,9 @@ function SkillForm({
                     }}
                     className={cn(
                       'press flex h-10 items-center gap-1.5 rounded-full border px-4 text-sm font-bold transition-colors',
-                      on ? 'border-wine-700 bg-wine-700 text-wine-on' : 'bg-card text-muted-foreground hover:border-stone-200 hover:text-foreground',
+                      on
+                        ? 'border-wine-700 bg-wine-700 text-wine-on'
+                        : 'bg-card text-muted-foreground hover:border-stone-200 hover:text-foreground',
                     )}
                   >
                     {on ? <Check className="size-4" strokeWidth={3} aria-hidden="true" /> : null}
@@ -206,13 +283,19 @@ function SkillForm({
         ) : null}
 
         <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-          <Dialog.Close className="press h-14 rounded-2xl border bg-card px-6 text-[15px] font-bold hover:bg-secondary">Cancel</Dialog.Close>
+          <Dialog.Close className="press h-14 rounded-2xl border bg-card px-6 text-[15px] font-bold hover:bg-secondary">
+            Cancel
+          </Dialog.Close>
           <button
             type="submit"
             disabled={busy}
             className="press flex h-14 items-center justify-center gap-2 rounded-2xl bg-wine-700 px-7 text-[15px] font-bold text-wine-on hover:bg-wine-600 disabled:opacity-60 sm:min-w-44"
           >
-            {busy ? <Loader2 className="size-[18px] animate-spin" aria-hidden="true" /> : <Check className="size-[18px]" aria-hidden="true" />}
+            {busy ? (
+              <Loader2 className="size-[18px] animate-spin" aria-hidden="true" />
+            ) : (
+              <Check className="size-[18px]" aria-hidden="true" />
+            )}
             {busy ? 'Saving…' : skill ? 'Save changes' : 'Post skill'}
           </button>
         </div>

@@ -31,7 +31,10 @@ const BY_CATEGORY: Record<string, string> = {
   'health-and-fitness': 'yoga',
 }
 
-export function skillImage(skill: Pick<Skill, 'title'> & { category?: Pick<Skill['category'], 'slug'> }): string {
+export function skillImage(
+  skill: Pick<Skill, 'title'> & { category?: Pick<Skill['category'], 'slug'>; image_url?: string | null },
+): string {
+  if (skill.image_url) return skill.image_url
   const hit = BY_TITLE.find(([re]) => re.test(skill.title))
   const name = hit?.[1] ?? (skill.category ? BY_CATEGORY[skill.category.slug] : undefined) ?? 'furniture'
   return `/skills/${name}.jpg`

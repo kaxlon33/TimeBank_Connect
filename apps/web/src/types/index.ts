@@ -103,12 +103,15 @@ export interface Skill {
   user: UserSummary
   created_at: string
   report_count: number
+  /** A picture the member uploaded. When empty, a picture is chosen from the title and category. */
+  image_url?: string | null
 }
 
 export interface SkillInput {
   title: string
   category_id: ID
   description: string
+  image_url?: string | null
 }
 
 export interface HelpRequest {
