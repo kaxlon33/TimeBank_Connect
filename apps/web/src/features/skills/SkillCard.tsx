@@ -2,9 +2,9 @@ import type { CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowUpRight, Clock, Heart, MapPin, Star } from 'lucide-react'
 import { Avatar } from '@/components/Avatar'
-import { formatDistance } from '@/lib/format'
 import { staggerDelay } from '@/lib/hooks'
 import { skillImage } from '@/lib/skillImages'
+import { whereLabel } from '@/lib/where'
 import { cn } from '@/lib/utils'
 import type { Skill } from '@/types'
 
@@ -15,15 +15,6 @@ interface Props {
   saved: boolean
   onToggleSave: (id: number) => void
   featured?: boolean
-}
-
-/** Nearby members show a distance; far-away ones show their area and country instead. */
-function whereLabel(skill: Skill, distance: number | null): string {
-  const area = skill.user.area
-  if (!area) return ''
-  if (distance === null || distance > 50) return `${area.name}, ${area.country_name}`
-  if (distance < 0.2) return `${area.name} · your area`
-  return `${area.name} · ${formatDistance(distance)}`
 }
 
 function Rating({ skill, className }: { skill: Skill; className?: string }) {
@@ -65,7 +56,7 @@ function SaveButton({ skill, saved, onToggleSave }: Pick<Props, 'skill' | 'saved
 export function SkillCard({ skill, distance, index, saved, onToggleSave, featured = false }: Props) {
   const style = { '--delay': staggerDelay(index) } as CSSProperties
   const image = skillImage(skill)
-  const where = whereLabel(skill, distance)
+  const where = whereLabel(skill.user.area, distance)
 
   if (featured) {
     return (
