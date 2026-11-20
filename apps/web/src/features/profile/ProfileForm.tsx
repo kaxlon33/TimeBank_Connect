@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
-import { Check, Loader2 } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { ArrowRight, Check, Clock, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { AreaAutocomplete } from '@/components/AreaAutocomplete'
 import { CountrySelect } from '@/components/CountrySelect'
@@ -12,6 +13,13 @@ import type { User } from '@/types'
 type Errors = Partial<Record<'name' | 'bio' | 'country' | 'area', string>>
 
 const BIO_MAX = 200
+const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+const WEEK_ORDER = [1, 2, 3, 4, 5, 6, 0]
+
+function hoursSummary(user: User) {
+  const days = WEEK_ORDER.filter((d) => user.availability.some((s) => s.weekday === d))
+  return days.length ? days.map((d) => DAYS[d]).join(', ') : 'Not set yet'
+}
 
 export function ProfileForm({ user }: { user: User }) {
   const initial = {
@@ -77,7 +85,17 @@ export function ProfileForm({ user }: { user: User }) {
           />
         </Field>
 
-        <Field id="profile-bio" label="About you" error={errors.bio} optional status={<span>{form.bio.length}/{BIO_MAX}</span>}>
+        <Field
+          id="profile-bio"
+          label="About you"
+          error={errors.bio}
+          optional
+          status={
+            <span>
+              {form.bio.length}/{BIO_MAX}
+            </span>
+          }
+        >
           <textarea
             id="profile-bio"
             value={form.bio}
@@ -90,7 +108,7 @@ export function ProfileForm({ user }: { user: User }) {
           />
         </Field>
 
-        <div className="space-y-5">
+        <div className="grid gap-5 sm:grid-cols-2">
           <Field id="profile-country" label="Country" error={errors.country}>
             <CountrySelect
               id="profile-country"
@@ -111,6 +129,22 @@ export function ProfileForm({ user }: { user: User }) {
             />
           </Field>
         </div>
+        <Link
+          to="/hours"
+          className="group flex items-center gap-3.5 rounded-2xl bg-primary-soft p-3.5 transition-colors hover:bg-primary-soft/70"
+        >
+          <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-card text-wine-700">
+            <Clock className="size-5" aria-hidden="true" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-[15px] font-bold text-wine-800">Your time</span>
+            <span className="block truncate text-sm text-wine-700/80">{hoursSummary(user)}</span>
+          </span>
+          <span className="flex items-center gap-1 text-sm font-bold text-wine-700">
+            Edit
+            <ArrowRight className="nudge size-4" aria-hidden="true" />
+          </span>
+        </Link>
       </div>
 
       <button
