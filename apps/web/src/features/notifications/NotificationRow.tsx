@@ -67,9 +67,10 @@ export function NotificationRow({ notification: n, index, onOpen, onToggleRead }
           onClick={onToggleRead}
           aria-label={unread ? 'Mark as read' : 'Mark as unread'}
           title={unread ? 'Mark as read' : 'Mark as unread'}
-          className="press grid size-10 shrink-0 place-items-center rounded-xl text-muted-foreground hover:bg-card hover:text-wine-700"
+          className="press flex h-10 shrink-0 items-center gap-1.5 rounded-xl px-2.5 text-xs font-bold text-muted-foreground hover:bg-card hover:text-wine-700"
         >
           {unread ? <MailOpen className="size-[18px]" aria-hidden="true" /> : <Mail className="size-[18px]" aria-hidden="true" />}
+          <span className="max-sm:sr-only">{unread ? 'Mark read' : 'Mark unread'}</span>
         </button>
       </div>
     </li>

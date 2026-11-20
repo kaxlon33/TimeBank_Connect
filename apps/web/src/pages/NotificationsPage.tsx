@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { BellOff, CheckCheck, Loader2 } from 'lucide-react'
+import { BellOff, CheckCheck, Loader2, Mail } from 'lucide-react'
 import { toast } from 'sonner'
 import { NotificationRow } from '@/features/notifications/NotificationRow'
 import { api } from '@/lib/api'
@@ -57,6 +57,19 @@ export function NotificationsPage() {
     }
   }
 
+  async function markAllUnread() {
+    setMarking(true)
+    try {
+      await api.markAllNotificationsUnread()
+      feed.setData((prev) => prev.map((n) => ({ ...n, read_at: null })))
+      toast.success('All marked as unread')
+    } catch {
+      toast.error('We could not update your notifications. Please try again.')
+    } finally {
+      setMarking(false)
+    }
+  }
+
   async function markAll() {
     setMarking(true)
     try {
@@ -81,15 +94,30 @@ export function NotificationsPage() {
             <span className="text-wine-700">Notifications</span>
           </h1>
         </div>
-        <button
-          type="button"
-          onClick={markAll}
-          disabled={marking || unread === 0}
-          className="press flex h-12 items-center justify-center gap-2 rounded-2xl border bg-card px-5 text-sm font-bold hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {marking ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : <CheckCheck className="size-4" aria-hidden="true" />}
-          Mark all as read
-        </button>
+        <div className="flex flex-wrap gap-2.5">
+          <button
+            type="button"
+            onClick={markAll}
+            disabled={marking || unread === 0}
+            className="press flex h-12 items-center justify-center gap-2 rounded-2xl border bg-card px-5 text-sm font-bold hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {marking ? (
+              <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+            ) : (
+              <CheckCheck className="size-4" aria-hidden="true" />
+            )}
+            Mark all as read
+          </button>
+          <button
+            type="button"
+            onClick={markAllUnread}
+            disabled={marking || all.length === 0 || unread === all.length}
+            className="press flex h-12 items-center justify-center gap-2 rounded-2xl border bg-card px-5 text-sm font-bold hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <Mail className="size-4" aria-hidden="true" />
+            Mark all as unread
+          </button>
+        </div>
       </header>
 
       <div role="group" aria-label="Filter notifications" className="tile-in mt-6 inline-flex gap-1 rounded-full bg-muted p-1">

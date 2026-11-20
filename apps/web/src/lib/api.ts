@@ -415,6 +415,14 @@ export const api = {
     }, 150)
   },
 
+  markAllNotificationsUnread(): Promise<void> {
+    return mutate(() => {
+      db.notifications.forEach((n) => {
+        n.read_at = null
+      })
+    }, 250)
+  },
+
   markAllNotificationsRead(): Promise<void> {
     return mutate(() => {
       const now = new Date().toISOString()
