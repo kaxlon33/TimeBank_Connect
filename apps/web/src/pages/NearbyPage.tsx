@@ -349,40 +349,105 @@ export function NearbyPage() {
         </div>
       ) : (
         <div className="mt-5 space-y-5">
-          <div className="max-w-sm">{panel}</div>
-          <p className="text-sm font-semibold text-muted-foreground" aria-live="polite">
-            {countText}
-          </p>
-          {fetched.status === 'loading' ? (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-busy="true">
-              {Array.from({ length: 3 }, (_, i) => (
-                <div key={i} className="skeleton-shimmer h-[230px] rounded-[24px]" />
+          <div className="tile-in">
+            <FilterPanel
+              bar
+              text={text}
+              onText={setText}
+              radius={radius}
+              onRadius={(r) => {
+                setRadius(r)
+                setSelected(null)
+              }}
+              chip={chip}
+              onChip={setChip}
+              availableNow={availableNow}
+              onAvailableNow={setAvailableNow}
+            />
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="font-heading text-xl font-bold tracking-[-0.02em]" aria-live="polite">
+              {countText}
+            </p>
+            <div role="radiogroup" aria-label="Sort helpers" className="flex gap-1 rounded-full bg-card p-1 shadow-card">
+              {(
+                [
+                  { value: 'nearest', label: 'Nearest' },
+                  { value: 'rated', label: 'Top rated' },
+                ] as const
+              ).map((o) => (
+                <button
+                  key={o.value}
+                  type="button"
+                  role="radio"
+                  aria-checked={sort === o.value}
+                  onClick={() => setSort(o.value)}
+                  className={cn(
+                    'h-9 rounded-full px-4 text-sm font-bold transition-colors',
+                    sort === o.value ? 'bg-wine-800 text-wine-on' : 'text-muted-foreground hover:text-foreground',
+                  )}
+                >
+                  {o.label}
+                </button>
               ))}
             </div>
+          </div>
+
+          {fetched.status === 'loading' ? (
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3" aria-busy="true">
+              {Array.from({ length: 3 }, (_, i) => (
+                <div key={i} className="skeleton-shimmer h-[400px] rounded-[28px]" />
+              ))}
+            </div>
+          ) : fetched.status === 'error' ? (
+            <div role="alert" className="rounded-[28px] border bg-card p-10 text-center">
+              <p className="font-heading text-xl font-bold">We couldn’t load helpers</p>
+              <button
+                type="button"
+                onClick={fetched.reload}
+                className="press mt-4 h-11 rounded-2xl bg-wine-700 px-5 text-sm font-bold text-wine-on hover:bg-wine-600"
+              >
+                Try again
+              </button>
+            </div>
           ) : list.length === 0 ? (
-            <div className="rounded-[28px] border bg-card p-10 text-center shadow-card">
-              <p className="font-heading text-xl font-bold">No helpers match</p>
-              <p className="mt-1 text-sm text-muted-foreground">Try a wider distance or fewer filters.</p>
-              {filtersOn ? (
-                <button
-                  type="button"
-                  onClick={clearFilters}
-                  className="press mt-4 h-11 rounded-2xl bg-wine-700 px-5 text-sm font-bold text-wine-on hover:bg-wine-600"
-                >
-                  Clear filters
-                </button>
-              ) : null}
+            <div className="rounded-[28px] border bg-card p-10 text-center shadow-card sm:p-16">
+              <span className="mx-auto grid size-16 place-items-center rounded-2xl bg-primary-soft text-wine-700">
+                <Users className="size-7" aria-hidden="true" />
+              </span>
+              <p className="font-heading mt-5 text-2xl font-bold tracking-[-0.03em]">No helpers match</p>
+              <p className="mx-auto mt-2 max-w-sm text-sm text-muted-foreground">Try a wider distance or fewer filters.</p>
+              <div className="mt-5 flex flex-wrap justify-center gap-2.5">
+                {filtersOn ? (
+                  <button
+                    type="button"
+                    onClick={clearFilters}
+                    className="press h-11 rounded-2xl border bg-card px-5 text-sm font-bold hover:bg-secondary"
+                  >
+                    Clear filters
+                  </button>
+                ) : null}
+                {radius < RADII[RADII.length - 1] ? (
+                  <button
+                    type="button"
+                    onClick={() => setRadius(10)}
+                    className="press h-11 rounded-2xl bg-wine-700 px-5 text-sm font-bold text-wine-on hover:bg-wine-600"
+                  >
+                    Search within 10 km
+                  </button>
+                ) : null}
+              </div>
             </div>
           ) : (
-            <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <ul className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
               {list.map((h, i) => (
                 <HelperRow
                   key={h.user.id}
                   helper={h}
                   index={i}
                   closest={i === 0 && sort === 'nearest' && list.length > 1}
-                  selected={false}
-                  onSelect={() => {
+                  onShowOnMap={() => {
                     setSelected(h.user.id)
                     setView('map')
                   }}
