@@ -3,6 +3,7 @@ import {
   ArrowUpDown,
   ChefHat,
   Dumbbell,
+  Heart,
   GraduationCap,
   HeartHandshake,
   LayoutGrid,
@@ -22,6 +23,7 @@ import { SkillCard, SkillCardSkeleton } from '@/features/skills/SkillCard'
 import { api, sessionStore } from '@/lib/api'
 import { distanceKm } from '@/lib/format'
 import { useAsync, useDebouncedValue } from '@/lib/hooks'
+import { usePersistentState } from '@/lib/storage'
 import type { Skill } from '@/types'
 
 const categoryIcons: Record<string, LucideIcon> = {
@@ -52,6 +54,9 @@ const categoryLabels: Record<string, string> = {
 type Radius = 'any' | '3' | '10'
 type Sort = 'match' | 'nearest' | 'rated'
 
+/** The "Saved" tab is not a real category; it only shows the skills the member has hearted. */
+const SAVED = '__saved'
+
 interface Item {
   skill: Skill
   distance: number | null
@@ -81,10 +86,7 @@ function CategoryTab({
       onClick={onClick}
       className="group relative flex h-12 shrink-0 items-center gap-2 px-4 text-sm font-bold text-muted-foreground transition-colors duration-200 outline-none first:pl-0 hover:text-foreground focus-visible:text-foreground aria-pressed:text-foreground"
     >
-      <Icon
-        className="size-[18px] transition-colors duration-200 group-aria-pressed:text-wine-700"
-        aria-hidden="true"
-      />
+      <Icon className="size-[18px] transition-colors duration-200 group-aria-pressed:text-wine-700" aria-hidden="true" />
       {children}
       <span
         aria-hidden="true"
@@ -98,14 +100,20 @@ export function BrowsePage() {
   const { me } = useSyncExternalStore(sessionStore.subscribe, sessionStore.getSnapshot)
   const [text, setText] = useState('')
   const [category, setCategory] = useState('')
-  const [radius, setRadius] = useState<Radius>('any')
-  const [sort, setSort] = useState<Sort>('match')
-  const [saved, setSaved] = useState<Set<number>>(new Set())
+  // These are remembered in the browser, so a refresh keeps the member's distance, sort and hearts.
+  const [radius, setRadius] = usePersistentState<Radius>('browse.radius', 'any', (v) => v === 'any' || v === '3' || v === '10')
+  const [sort, setSort] = usePersistentState<Sort>('browse.sort', 'match', (v) => v === 'match' || v === 'nearest' || v === 'rated')
+  const [savedIds, setSavedIds] = usePersistentState<number[]>(
+    'saved',
+    [],
+    (v) => Array.isArray(v) && v.every((x) => typeof x === 'number'),
+  )
+  const saved = useMemo(() => new Set(savedIds), [savedIds])
 
   const query = useDebouncedValue(text.trim(), 300)
   const categories = useAsync(() => api.getCategories(), 'categories')
   const results = useAsync(
-    (signal) => api.searchSkills({ q: query, category: category || undefined }, signal),
+    (signal) => api.searchSkills({ q: query, category: category && category !== SAVED ? category : undefined }, signal),
     `${query}|${category}`,
   )
 
@@ -116,27 +124,20 @@ export function BrowsePage() {
     let list = data.map<Item>((skill) => ({
       skill,
       distance:
-        here && skill.user.area
-          ? distanceKm(here.latitude, here.longitude, skill.user.area.latitude, skill.user.area.longitude)
-          : null,
+        here && skill.user.area ? distanceKm(here.latitude, here.longitude, skill.user.area.latitude, skill.user.area.longitude) : null,
     }))
+    if (category === SAVED) list = list.filter((i) => saved.has(i.skill.id))
     if (radius !== 'any') list = list.filter((i) => i.distance !== null && i.distance <= Number(radius))
     if (sort === 'nearest') list.sort((a, b) => (a.distance ?? 1e9) - (b.distance ?? 1e9))
     if (sort === 'rated') list.sort((a, b) => (b.skill.user.rating_avg ?? 0) - (a.skill.user.rating_avg ?? 0))
     return list
-  }, [data, me.area, radius, sort])
+  }, [data, me.area, radius, sort, category, saved])
 
   const featured = !query && !category && radius === 'any' && sort === 'match' && items.length >= 3 ? items[0] : null
   const rest = featured ? items.slice(1) : items
   const filtersActive = Boolean(query || category || radius !== 'any' || sort !== 'match')
 
-  const toggleSave = (id: number) =>
-    setSaved((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
+  const toggleSave = (id: number) => setSavedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
 
   const clearAll = () => {
     setText('')
@@ -227,6 +228,9 @@ export function BrowsePage() {
         >
           <CategoryTab active={category === ''} onClick={() => setCategory('')} icon={LayoutGrid}>
             All
+          </CategoryTab>
+          <CategoryTab active={category === SAVED} onClick={() => setCategory(category === SAVED ? '' : SAVED)} icon={Heart}>
+            {savedIds.length ? `Saved · ${savedIds.length}` : 'Saved'}
           </CategoryTab>
           {categories.status === 'success'
             ? categories.data

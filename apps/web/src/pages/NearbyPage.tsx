@@ -8,6 +8,7 @@ import { NearbyMap, type NearbyMapHandle } from '@/features/nearby/NearbyMap'
 import { PreviewCard } from '@/features/nearby/PreviewCard'
 import { api, sessionStore } from '@/lib/api'
 import { useAsync, useMediaQuery } from '@/lib/hooks'
+import { usePersistentState } from '@/lib/storage'
 import { cn } from '@/lib/utils'
 
 type View = 'map' | 'list'
@@ -26,12 +27,13 @@ export function NearbyPage() {
   const rows = useRef(new Map<number | string, HTMLLIElement>())
   const listBox = useRef<HTMLDivElement>(null)
 
-  const [view, setView] = useState<View>('map')
-  const [radius, setRadius] = useState<Radius>(10)
+  // The view, distance and sort are remembered in the browser for next time.
+  const [view, setView] = usePersistentState<View>('nearby.view', 'map', (v) => v === 'map' || v === 'list')
+  const [radius, setRadius] = usePersistentState<Radius>('nearby.radius', 10, (v) => RADII.some((r) => r === v))
   const [text, setText] = useState('')
   const [chip, setChip] = useState<string | null>(null)
   const [availableNow, setAvailableNow] = useState(false)
-  const [sort, setSort] = useState<Sort>('nearest')
+  const [sort, setSort] = usePersistentState<Sort>('nearby.sort', 'nearest', (v) => v === 'nearest' || v === 'rated')
   const [selected, setSelected] = useState<number | string | null>(null)
   const [point, setPoint] = useState<{ x: number; y: number } | null>(null)
   const [position, setPosition] = useState<Position | null>(null)
