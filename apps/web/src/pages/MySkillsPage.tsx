@@ -77,14 +77,14 @@ export function MySkillsPage() {
           <p className="text-sm font-semibold text-muted-foreground">
             {skills.status === 'success' ? `${visible} of ${list.length} shown on browse` : 'What you offer your neighbours'}
           </p>
-          <h1 className="font-heading mt-2 text-[clamp(2.2rem,5.2vw,3.75rem)] leading-[0.98] font-bold tracking-[-0.045em]">
+          <h1 className="font-heading mt-2 text-[clamp(2rem,4.2vw,3rem)] leading-[0.98] font-bold tracking-[-0.045em]">
             My <span className="text-wine-700">skills</span>
           </h1>
         </div>
         <button
           type="button"
           onClick={openNew}
-          className="press flex h-14 items-center justify-center gap-2 rounded-2xl bg-wine-700 px-7 text-[15px] font-bold text-wine-on shadow-card hover:bg-wine-600"
+          className="press flex h-12 items-center justify-center gap-2 rounded-2xl bg-wine-700 px-6 text-sm font-bold text-wine-on hover:bg-wine-600"
         >
           <Plus className="size-5" aria-hidden="true" />
           Add a skill
@@ -93,9 +93,9 @@ export function MySkillsPage() {
 
       <div className="mt-7">
         {skills.status === 'loading' ? (
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3" aria-busy="true">
+          <div className="grid gap-4 lg:grid-cols-2" aria-busy="true">
             {Array.from({ length: 3 }, (_, i) => (
-              <div key={i} className="skeleton-shimmer h-[380px] rounded-[28px]" />
+              <div key={i} className="skeleton-shimmer h-36 rounded-[24px]" />
             ))}
           </div>
         ) : skills.status === 'error' ? (
@@ -128,7 +128,7 @@ export function MySkillsPage() {
             </button>
           </div>
         ) : (
-          <ul className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <ul className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             {list.map((skill, i) => (
               <MySkillCard
                 key={skill.id}
@@ -144,11 +144,11 @@ export function MySkillsPage() {
               <button
                 type="button"
                 onClick={openNew}
-                className="press group grid h-full min-h-[200px] w-full place-items-center rounded-[28px] border-2 border-dashed border-stone-200 p-8 text-muted-foreground transition-colors hover:border-wine-700/40 hover:bg-primary-soft/50 hover:text-wine-700"
+                className="press group grid h-full min-h-[96px] w-full place-items-center rounded-[24px] border-2 border-dashed border-stone-200 p-5 text-muted-foreground transition-colors hover:border-wine-700/40 hover:bg-primary-soft/50 hover:text-wine-700"
               >
-                <span className="flex flex-col items-center gap-3">
-                  <span className="grid size-14 place-items-center rounded-2xl bg-muted transition-colors group-hover:bg-card">
-                    <Plus className="size-6" aria-hidden="true" />
+                <span className="flex items-center gap-3">
+                  <span className="grid size-11 place-items-center rounded-xl bg-muted transition-colors group-hover:bg-card">
+                    <Plus className="size-5" aria-hidden="true" />
                   </span>
                   <span className="text-[15px] font-bold">Add another skill</span>
                 </span>
