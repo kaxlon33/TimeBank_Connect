@@ -1,11 +1,12 @@
 import { useMemo, useState, useSyncExternalStore } from 'react'
 import {
+  ArrowUpDown,
   ChefHat,
-  ChevronDown,
   Dumbbell,
   GraduationCap,
   HeartHandshake,
   LayoutGrid,
+  MapPin,
   Music,
   Search,
   SearchX,
@@ -16,6 +17,7 @@ import {
   X,
   type LucideIcon,
 } from 'lucide-react'
+import { FilterMenu } from '@/components/FilterMenu'
 import { SkillCard, SkillCardSkeleton } from '@/features/skills/SkillCard'
 import { api, sessionStore } from '@/lib/api'
 import { distanceKm } from '@/lib/format'
@@ -48,34 +50,17 @@ function greeting() {
   return h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening'
 }
 
-function Select<T extends string>({
-  label,
-  value,
-  onChange,
-  options,
-}: {
-  label: string
-  value: T
-  onChange: (v: T) => void
-  options: { value: T; label: string }[]
-}) {
-  return (
-    <label className="relative flex items-center">
-      <span className="sr-only">{label}</span>
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value as T)}
-        className="h-11 cursor-pointer appearance-none rounded-full border bg-card py-0 pr-10 pl-4 text-sm font-bold outline-none focus-visible:ring-2 focus-visible:ring-ring"
-      >
-        {options.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
-          </option>
-        ))}
-      </select>
-      <ChevronDown className="pointer-events-none absolute right-3.5 size-4 text-muted-foreground" aria-hidden="true" />
-    </label>
-  )
+/** Short names so every category fits on one line. */
+const categoryLabels: Record<string, string> = {
+  'home-and-garden': 'Garden',
+  'repairs-and-diy': 'Repairs',
+  'tech-help': 'Tech',
+  'tutoring-and-languages': 'Learning',
+  'cooking-and-baking': 'Cooking',
+  'care-and-companionship': 'Care',
+  'transport-and-errands': 'Errands',
+  'arts-crafts-and-music': 'Arts',
+  'health-and-fitness': 'Fitness',
 }
 
 function Chip({
@@ -97,7 +82,7 @@ function Chip({
       aria-pressed={active}
       onClick={onClick}
       className={cn(
-        'press flex h-11 shrink-0 items-center gap-2 rounded-full border px-4 text-sm font-bold transition-colors duration-200',
+        'press flex h-11 shrink-0 items-center gap-2 rounded-full border px-3.5 text-sm font-bold transition-colors duration-200',
         active ? 'border-foreground bg-foreground text-background' : 'bg-card hover:bg-primary-soft',
       )}
     >
@@ -209,11 +194,11 @@ export function BrowsePage() {
         </form>
       </header>
 
-      <div className="mt-8 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+      <div className="mt-8 flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-4">
         <div
           role="group"
           aria-label="Categories"
-          className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:-mx-8 sm:px-8 lg:mx-0 lg:flex-wrap lg:overflow-visible lg:px-0 [&::-webkit-scrollbar]:hidden"
+          className="-mx-4 flex min-w-0 gap-1.5 overflow-x-auto px-4 py-1 [scrollbar-width:none] sm:-mx-8 sm:px-8 lg:mx-0 lg:flex-1 lg:pr-10 lg:pl-0 lg:[mask-image:linear-gradient(to_right,black_calc(100%-40px),transparent)] [&::-webkit-scrollbar]:hidden"
         >
           <Chip active={category === ''} onClick={() => setCategory('')} icon={LayoutGrid}>
             All
@@ -228,7 +213,7 @@ export function BrowsePage() {
                     onClick={() => setCategory(category === c.slug ? '' : c.slug)}
                     icon={categoryIcons[c.slug] ?? LayoutGrid}
                   >
-                    {c.name}
+                    {categoryLabels[c.slug] ?? c.name}
                   </Chip>
                 ))
             : Array.from({ length: 5 }, (_, i) => (
@@ -236,25 +221,27 @@ export function BrowsePage() {
               ))}
         </div>
 
-        <div className="flex gap-2">
-          <Select
+        <div className="flex shrink-0 gap-2">
+          <FilterMenu
             label="Distance"
+            icon={MapPin}
             value={radius}
             onChange={setRadius}
             options={[
-              { value: 'any', label: 'Any distance' },
-              { value: '3', label: 'Within 3 km' },
-              { value: '10', label: 'Within 10 km' },
+              { value: 'any', label: 'Any distance', hint: 'Show everyone' },
+              { value: '3', label: 'Within 3 km', hint: 'A short walk' },
+              { value: '10', label: 'Within 10 km', hint: 'A short ride' },
             ]}
           />
-          <Select
+          <FilterMenu
             label="Sort by"
+            icon={ArrowUpDown}
             value={sort}
             onChange={setSort}
             options={[
-              { value: 'match', label: 'Best match' },
-              { value: 'nearest', label: 'Nearest' },
-              { value: 'rated', label: 'Top rated' },
+              { value: 'match', label: 'Best match', hint: 'Trusted and nearby first' },
+              { value: 'nearest', label: 'Nearest', hint: 'Closest helpers first' },
+              { value: 'rated', label: 'Top rated', hint: 'Highest reviews first' },
             ]}
           />
         </div>
