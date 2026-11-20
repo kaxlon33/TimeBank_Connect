@@ -94,30 +94,23 @@ export function NotificationsPage() {
             <span className="text-wine-700">Notifications</span>
           </h1>
         </div>
-        <div className="flex flex-wrap gap-2.5">
+        {all.length > 0 ? (
           <button
             type="button"
-            onClick={markAll}
-            disabled={marking || unread === 0}
-            className="press flex h-12 items-center justify-center gap-2 rounded-2xl border bg-card px-5 text-sm font-bold hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50"
+            onClick={unread > 0 ? markAll : markAllUnread}
+            disabled={marking}
+            className="press flex h-10 shrink-0 items-center gap-2 self-start rounded-full border bg-card px-4 text-sm font-bold hover:bg-secondary disabled:opacity-60 sm:self-auto"
           >
             {marking ? (
               <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-            ) : (
+            ) : unread > 0 ? (
               <CheckCheck className="size-4" aria-hidden="true" />
+            ) : (
+              <Mail className="size-4" aria-hidden="true" />
             )}
-            Mark all as read
+            {unread > 0 ? 'Mark all as read' : 'Mark all as unread'}
           </button>
-          <button
-            type="button"
-            onClick={markAllUnread}
-            disabled={marking || all.length === 0 || unread === all.length}
-            className="press flex h-12 items-center justify-center gap-2 rounded-2xl border bg-card px-5 text-sm font-bold hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            <Mail className="size-4" aria-hidden="true" />
-            Mark all as unread
-          </button>
-        </div>
+        ) : null}
       </header>
 
       <div role="group" aria-label="Filter notifications" className="tile-in mt-6 inline-flex gap-1 rounded-full bg-muted p-1">
