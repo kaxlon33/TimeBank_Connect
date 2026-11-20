@@ -166,6 +166,10 @@ function findRequest(id: ID): HelpRequest {
 
 /* ---------- auth ---------- */
 
+/** Demo data: when each member last used the app. Two members have been quiet for a while. */
+const LAST_ACTIVE_DAYS_AGO: Record<number, number> = { 2: 1, 3: 0, 4: 3, 5: 0, 6: 47, 7: 5, 8: 62, 9: 12, 10: 2 }
+const lastActive = (id: number) => new Date(Date.now() - (LAST_ACTIVE_DAYS_AGO[id] ?? 4) * 24 * 60 * 60 * 1000).toISOString()
+
 /** The demo reset link carries this token. The real API will send a one-time token by email. */
 export const DEMO_RESET_TOKEN = 'demo-reset-token'
 const passwordChanges = new Map<string, string>()
@@ -559,6 +563,8 @@ export const api = {
             id: u.id,
             name: u.name,
             email: u.email,
+            avatar_url: u.avatar_url,
+            last_active_at: lastActive(u.id),
             area: u.area,
             status: u.status,
             credit_balance: u.credit_balance,

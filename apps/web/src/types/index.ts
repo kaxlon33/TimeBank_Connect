@@ -191,6 +191,9 @@ export interface AdminMember {
   id: ID
   name: string
   email: string
+  avatar_url: string | null
+  /** The last time they used the app. A member quiet for 30 days or more counts as inactive. */
+  last_active_at: string
   area: Area | null
   status: UserStatus
   credit_balance: number

@@ -2,30 +2,38 @@ import { useMemo, useState, type CSSProperties } from 'react'
 import { Loader2, Search, UserCheck, UserX, Users, X } from 'lucide-react'
 import { Dialog } from 'radix-ui'
 import { toast } from 'sonner'
+import { Avatar } from '@/components/Avatar'
 import { AdminHeader } from '@/features/admin/AdminShell'
 import { api, ApiError } from '@/lib/api'
-import { formatCredits, formatDate, initials } from '@/lib/format'
+import { formatCredits, relativeTime } from '@/lib/format'
 import { staggerDelay, useAsync, useDebouncedValue } from '@/lib/hooks'
 import { cn } from '@/lib/utils'
 import type { AdminMember } from '@/types'
 
-type Filter = 'all' | 'active' | 'suspended'
+type Presence = 'active' | 'inactive' | 'suspended'
+type Filter = 'all' | Presence
 
-const tones = ['bg-[#efe1e4] text-[#5e1a2b]', 'bg-[#e9e2d6] text-[#5a4320]', 'bg-[#e1e4e8] text-[#2f3a4a]', 'bg-[#e4e9e2] text-[#2f4a33]']
+/** Quiet for this many days or more counts as inactive. */
+const INACTIVE_AFTER_DAYS = 30
 
-function StatusChip({ status }: { status: AdminMember['status'] }) {
+function presenceOf(m: AdminMember): Presence {
+  if (m.status === 'suspended') return 'suspended'
+  const days = (Date.now() - new Date(m.last_active_at).getTime()) / (24 * 60 * 60 * 1000)
+  return days >= INACTIVE_AFTER_DAYS ? 'inactive' : 'active'
+}
+
+const presenceStyle: Record<Presence, { label: string; chip: string; dot: string }> = {
+  active: { label: 'Active', chip: 'bg-status-completed-bg text-status-completed', dot: 'bg-status-completed' },
+  inactive: { label: 'Inactive', chip: 'bg-muted text-muted-foreground', dot: 'bg-stone-400' },
+  suspended: { label: 'Suspended', chip: 'bg-status-declined-bg text-status-declined', dot: 'bg-status-declined' },
+}
+
+function StatusChip({ presence }: { presence: Presence }) {
+  const st = presenceStyle[presence]
   return (
-    <span
-      className={cn(
-        'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold',
-        status === 'active' ? 'bg-status-completed-bg text-status-completed' : 'bg-status-declined-bg text-status-declined',
-      )}
-    >
-      <span
-        className={cn('size-1.5 rounded-full', status === 'active' ? 'bg-status-completed' : 'bg-status-declined')}
-        aria-hidden="true"
-      />
-      {status === 'active' ? 'Active' : 'Suspended'}
+    <span className={cn('inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold', st.chip)}>
+      <span className={cn('size-1.5 rounded-full', st.dot)} aria-hidden="true" />
+      {st.label}
     </span>
   )
 }
@@ -165,8 +173,8 @@ export function AdminMembersPage() {
   const members = useAsync((signal) => api.getAdminMembers(query, signal), `members|${query}`)
 
   const all = useMemo(() => (members.status === 'success' ? members.data : []), [members])
-  const shown = useMemo(() => all.filter((m) => filter === 'all' || m.status === filter), [all, filter])
-  const suspended = all.filter((m) => m.status === 'suspended').length
+  const shown = useMemo(() => all.filter((m) => filter === 'all' || presenceOf(m) === filter), [all, filter])
+  const count = (p: Presence) => all.filter((m) => presenceOf(m) === p).length
 
   const apply = (id: AdminMember['id'], status: AdminMember['status'], reason: string | null) =>
     members.setData((prev) => prev.map((m) => (m.id === id ? { ...m, status, suspended_reason: reason } : m)))
@@ -202,7 +210,8 @@ export function AdminMembersPage() {
             [
               { value: 'all', label: 'All' },
               { value: 'active', label: 'Active' },
-              { value: 'suspended', label: suspended ? `Suspended · ${suspended}` : 'Suspended' },
+              { value: 'inactive', label: count('inactive') ? `Inactive · ${count('inactive')}` : 'Inactive' },
+              { value: 'suspended', label: count('suspended') ? `Suspended · ${count('suspended')}` : 'Suspended' },
             ] as const
           ).map((f) => (
             <button
@@ -224,14 +233,13 @@ export function AdminMembersPage() {
       <section aria-label="Members" className="rounded-[28px] border bg-card shadow-card">
         <div
           aria-hidden="true"
-          className="hidden grid-cols-[minmax(0,2fr)_minmax(0,1.1fr)_70px_70px_80px_110px_120px_130px] items-center gap-4 border-b px-6 py-3.5 text-[11px] font-bold tracking-[0.1em] text-muted-foreground uppercase lg:grid"
+          className="hidden grid-cols-[minmax(0,2fr)_minmax(0,1fr)_80px_80px_130px_120px_130px] items-center gap-4 border-b px-6 py-3.5 text-[11px] font-bold tracking-[0.1em] text-muted-foreground uppercase lg:grid"
         >
           <span>Member</span>
           <span>Area</span>
           <span className="text-right">Sessions</span>
-          <span className="text-right">Trust</span>
           <span className="text-right">Credits</span>
-          <span>Joined</span>
+          <span>Last active</span>
           <span>Status</span>
           <span />
         </div>
@@ -268,14 +276,10 @@ export function AdminMembersPage() {
               <li
                 key={m.id}
                 style={{ '--delay': staggerDelay(i) } as CSSProperties}
-                className="tile-in grid items-center gap-x-4 gap-y-3 px-4 py-4 sm:px-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1.1fr)_70px_70px_80px_110px_120px_130px]"
+                className="tile-in grid items-center gap-x-4 gap-y-3 px-4 py-4 sm:px-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_80px_80px_130px_120px_130px]"
               >
                 <div className="flex min-w-0 items-center gap-3.5">
-                  <span
-                    className={cn('grid size-11 shrink-0 place-items-center rounded-full text-sm font-bold', tones[m.id % tones.length])}
-                  >
-                    {initials(m.name)}
-                  </span>
+                  <Avatar name={m.name} src={m.avatar_url} size={46} className="shrink-0" />
                   <div className="min-w-0">
                     <p className="truncate text-[15px] font-bold">{m.name}</p>
                     <p className="truncate text-[13px] text-muted-foreground">{m.email}</p>
@@ -293,17 +297,16 @@ export function AdminMembersPage() {
                   <span className="mr-1.5 text-xs font-bold text-muted-foreground uppercase lg:hidden">Sessions</span>
                   {m.completed_sessions}
                 </p>
-                <p className="text-sm lg:text-right">
-                  <span className="mr-1.5 text-xs font-bold text-muted-foreground uppercase lg:hidden">Trust</span>
-                  {Math.round(m.trust_score)}
-                </p>
                 <p className="text-sm font-bold lg:text-right">
                   <span className="mr-1.5 text-xs font-bold text-muted-foreground uppercase lg:hidden">Credits</span>
                   {formatCredits(m.credit_balance)} h
                 </p>
-                <p className="text-sm text-muted-foreground">{formatDate(m.joined_at)}</p>
+                <p className={cn('text-sm', presenceOf(m) === 'inactive' ? 'font-semibold text-status-pending' : 'text-muted-foreground')}>
+                  <span className="mr-1.5 text-xs font-bold text-muted-foreground uppercase lg:hidden">Last active</span>
+                  {relativeTime(m.last_active_at)}
+                </p>
                 <div>
-                  <StatusChip status={m.status} />
+                  <StatusChip presence={presenceOf(m)} />
                 </div>
                 <div className="lg:text-right">
                   <button
