@@ -10,3 +10,13 @@ createRoot(document.getElementById('root')!).render(
     <App />
   </StrictMode>,
 )
+
+// Offline support. Only in the built app: during development it would keep serving old files.
+if ('serviceWorker' in navigator && import.meta.env.PROD) {
+  const register = () =>
+    navigator.serviceWorker.register('/sw.js').catch(() => {
+      /* The app works the same without it. */
+    })
+  if (document.readyState === 'complete') register()
+  else window.addEventListener('load', register)
+}
