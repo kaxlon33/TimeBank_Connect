@@ -3,6 +3,7 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { Flag, LayoutGrid, Loader2, LogOut, Menu, ShieldAlert, ShieldCheck, SlidersHorizontal, Users, X } from 'lucide-react'
 import { Dialog } from 'radix-ui'
 import { toast } from 'sonner'
+import { Avatar } from '@/components/Avatar'
 import { Logo } from '@/components/Logo'
 import { api, sessionStore } from '@/lib/api'
 import { formatCredits } from '@/lib/format'
@@ -91,11 +92,23 @@ function SidebarBody({ onNavigate }: { onNavigate?: () => void }) {
         </div>
 
         <div className="flex items-center gap-3">
-          <span className="grid size-10 shrink-0 place-items-center rounded-full bg-brass text-sm font-bold text-wine-900">AD</span>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-bold text-white">{me.name}</p>
-            <p className="truncate text-xs text-wine-on-muted">{me.email}</p>
-          </div>
+          <NavLink
+            to="/admin/profile"
+            onClick={onNavigate}
+            aria-label="Your profile"
+            className={({ isActive }) =>
+              cn(
+                'flex min-w-0 flex-1 items-center gap-3 rounded-2xl border p-1.5 pr-2 transition-colors',
+                isActive ? 'border-white/15 bg-white/10' : 'border-transparent hover:bg-white/5',
+              )
+            }
+          >
+            <Avatar name={me.name} src={me.avatar_url} size={40} />
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-sm font-bold text-white">{me.name}</span>
+              <span className="block truncate text-xs text-wine-on-muted">Your profile</span>
+            </span>
+          </NavLink>
           <button
             type="button"
             onClick={logOut}

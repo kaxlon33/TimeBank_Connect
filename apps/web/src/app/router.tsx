@@ -5,6 +5,7 @@ import { RedirectIfSignedIn, RequireAuth } from './RequireAuth'
 import { AdminMembersPage } from '@/pages/admin/AdminMembersPage'
 import { AdminModerationPage } from '@/pages/admin/AdminModerationPage'
 import { AdminOverviewPage } from '@/pages/admin/AdminOverviewPage'
+import { AdminProfilePage } from '@/pages/admin/AdminProfilePage'
 import { AdminSettingsPage } from '@/pages/admin/AdminSettingsPage'
 import { BrowsePage } from '@/pages/BrowsePage'
 import { CreditsPage } from '@/pages/CreditsPage'
@@ -54,6 +55,7 @@ export const router = createBrowserRouter([
       { path: '/admin/members', element: <AdminMembersPage /> },
       { path: '/admin/moderation', element: <AdminModerationPage /> },
       { path: '/admin/settings', element: <AdminSettingsPage /> },
+      { path: '/admin/profile', element: <AdminProfilePage /> },
     ],
   },
   { path: '*', element: <Navigate to="/" replace /> },

@@ -21,7 +21,8 @@ function hoursSummary(user: User) {
   return days.length ? days.map((d) => DAYS[d]).join(', ') : 'Not set yet'
 }
 
-export function ProfileForm({ user }: { user: User }) {
+/** `showHours` is for members. Admins have no weekly hours, so they hide it. */
+export function ProfileForm({ user, showHours = true }: { user: User; showHours?: boolean }) {
   const initial = {
     name: user.name,
     bio: user.bio,
@@ -129,22 +130,24 @@ export function ProfileForm({ user }: { user: User }) {
             />
           </Field>
         </div>
-        <Link
-          to="/hours"
-          className="group flex items-center gap-3.5 rounded-2xl bg-primary-soft p-3.5 transition-colors hover:bg-primary-soft/70"
-        >
-          <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-card text-wine-700">
-            <Clock className="size-5" aria-hidden="true" />
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="block text-[15px] font-bold text-wine-800">Your time</span>
-            <span className="block truncate text-sm text-wine-700/80">{hoursSummary(user)}</span>
-          </span>
-          <span className="flex items-center gap-1 text-sm font-bold text-wine-700">
-            Edit
-            <ArrowRight className="nudge size-4" aria-hidden="true" />
-          </span>
-        </Link>
+        {showHours ? (
+          <Link
+            to="/hours"
+            className="group flex items-center gap-3.5 rounded-2xl bg-primary-soft p-3.5 transition-colors hover:bg-primary-soft/70"
+          >
+            <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-card text-wine-700">
+              <Clock className="size-5" aria-hidden="true" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[15px] font-bold text-wine-800">Your time</span>
+              <span className="block truncate text-sm text-wine-700/80">{hoursSummary(user)}</span>
+            </span>
+            <span className="flex items-center gap-1 text-sm font-bold text-wine-700">
+              Edit
+              <ArrowRight className="nudge size-4" aria-hidden="true" />
+            </span>
+          </Link>
+        ) : null}
       </div>
 
       <button
