@@ -2,6 +2,7 @@ import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { AppLayout } from './layouts/AppLayout'
 import { BrowsePage } from '@/pages/BrowsePage'
 import { ComingSoonPage } from '@/pages/ComingSoonPage'
+import { HoursPage } from '@/pages/HoursPage'
 import { LoginPage } from '@/pages/LoginPage'
 import { ProfilePage } from '@/pages/ProfilePage'
 import { RegisterPage } from '@/pages/RegisterPage'
@@ -21,6 +22,7 @@ export const router = createBrowserRouter([
       { path: '/credits', element: <ComingSoonPage title="Credits" /> },
       { path: '/my-skills', element: <ComingSoonPage title="My skills" /> },
       { path: '/profile', element: <ProfilePage /> },
+      { path: '/hours', element: <HoursPage /> },
       { path: '/notifications', element: <ComingSoonPage title="Notifications" /> },
     ],
   },

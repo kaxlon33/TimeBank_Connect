@@ -1,12 +1,11 @@
 import { useSyncExternalStore } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowRight, Award, Camera, Check, Lock, MapPin, Star } from 'lucide-react'
+import { ArrowRight, Award, Camera, Check, Clock, Lock, MapPin, Star } from 'lucide-react'
 import { toast } from 'sonner'
 import { Avatar } from '@/components/Avatar'
 import { AvatarPicker } from '@/features/profile/AvatarPicker'
 import { badgeIcons, BADGES } from '@/features/profile/badges'
 import { ProfileForm } from '@/features/profile/ProfileForm'
-import { AvailabilityEditor } from '@/features/profile/AvailabilityEditor'
 import { ReviewsList } from '@/features/skills/ReviewsList'
 import { api, sessionStore } from '@/lib/api'
 import { formatDate } from '@/lib/format'
@@ -154,13 +153,28 @@ export function ProfilePage() {
             </ul>
           </section>
 
-          <section aria-labelledby="hours-title" className="rounded-[28px] bg-primary-soft p-6 sm:p-8">
-            <h2 id="hours-title" className="font-heading text-2xl font-bold tracking-[-0.03em] text-wine-800">
-              Your usual hours
-            </h2>
-            <p className="mt-1.5 mb-5 text-sm text-wine-700/80">Switch on the days you are free and choose your hours.</p>
-            <AvailabilityEditor key={me.id} slots={me.availability} />
-          </section>
+          <Link
+            to="/hours"
+            className="group flex items-center justify-between gap-4 rounded-[28px] bg-primary-soft p-6 transition-colors hover:bg-primary-soft/70 sm:px-8"
+          >
+            <span className="flex items-center gap-4">
+              <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-card text-wine-700">
+                <Clock className="size-6" aria-hidden="true" />
+              </span>
+              <span>
+                <span className="font-heading block text-xl font-bold tracking-[-0.03em] text-wine-800">Your usual hours</span>
+                <span className="mt-0.5 block text-sm text-wine-700/80">
+                  {me.availability.length
+                    ? `Free ${me.availability.length} ${me.availability.length === 1 ? 'day' : 'days'} a week`
+                    : 'Not set yet'}
+                </span>
+              </span>
+            </span>
+            <span className="flex items-center gap-1.5 text-sm font-bold text-wine-700">
+              Edit
+              <ArrowRight className="nudge size-4" aria-hidden="true" />
+            </span>
+          </Link>
 
           <section aria-labelledby="skills-title" className="rounded-[28px] border bg-card p-6 shadow-card sm:p-8">
             <div className="flex items-center justify-between gap-3">
