@@ -14,7 +14,8 @@ export function LogoMark({ className }: { className?: string; inverted?: boolean
   )
 }
 
-export function Logo({ className, onDark = false, compact = false }: { className?: string; onDark?: boolean; compact?: boolean }) {
+/** `compact` hides the name on phones. `tiny` hides it only on the very smallest screens (under 360px wide). */
+export function Logo({ className, onDark = false, compact = false, tiny = false }: { className?: string; onDark?: boolean; compact?: boolean; tiny?: boolean }) {
   return (
     <span className={cn('flex items-center gap-2.5', className)}>
       <LogoMark />
@@ -22,6 +23,7 @@ export function Logo({ className, onDark = false, compact = false }: { className
         className={cn(
           'font-heading text-base leading-none font-bold tracking-[-0.03em] sm:text-lg',
           compact && 'hidden sm:inline',
+          tiny && 'max-[359px]:hidden',
         )}
       >
         timebank<span className={onDark ? 'text-brass' : 'text-wine-600'}>/connect</span>

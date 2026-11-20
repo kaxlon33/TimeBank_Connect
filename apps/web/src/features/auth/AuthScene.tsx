@@ -67,12 +67,12 @@ export function AuthScene({ verbs, headlineLabel, secondLine, intro, headerLink,
   const item = ticker[tick]
 
   return (
-    <div className="relative isolate flex min-h-dvh flex-col text-wine-on">
+    <div className="relative isolate flex min-h-dvh flex-col overflow-x-clip text-wine-on">
       <Background />
 
       <header className="relative z-10 flex items-center justify-between gap-3 px-5 pt-5 sm:px-8 sm:pt-7">
         <Link to="/" className="inline-flex min-h-11 items-center" aria-label="TimeBank Connect">
-          <Logo onDark />
+          <Logo onDark tiny />
         </Link>
         <Link
           to={headerLink.to}
