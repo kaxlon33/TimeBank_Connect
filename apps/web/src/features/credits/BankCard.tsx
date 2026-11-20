@@ -29,7 +29,15 @@ export function BankCard({ name, memberId, since, balance }: Props) {
     '--sheen-y': `${50 + tilt.y * 40}%`,
   } as CSSProperties
 
-  const number = String(memberId).padStart(4, '0')
+  // 16 digits in four groups: year joined, month and day joined, then the member id.
+  const joined = new Date(since)
+  const id = String(memberId).padStart(8, '0')
+  const number = [
+    String(joined.getFullYear()),
+    String(joined.getMonth() + 1).padStart(2, '0') + String(joined.getDate()).padStart(2, '0'),
+    id.slice(0, 4),
+    id.slice(4),
+  ].join(' ')
   const month = new Date(since).toLocaleDateString('en-GB', { month: '2-digit', year: '2-digit' })
 
   return (
@@ -84,7 +92,10 @@ export function BankCard({ name, memberId, since, balance }: Props) {
         </div>
 
         <div>
-          <p className="font-heading text-sm tracking-[0.2em] sm:text-lg sm:tracking-[0.22em] text-white/90 tabular-nums">•••• •••• •••• {number}</p>
+          <p className="text-[10px] font-semibold tracking-[0.12em] text-wine-on-muted uppercase">Member number</p>
+          <p className="font-heading mt-1 text-[17px] tracking-[0.14em] text-white tabular-nums sm:text-xl sm:tracking-[0.18em]">
+            {number}
+          </p>
           <div className="mt-2.5 flex items-end justify-between gap-3">
             <p className="truncate text-sm font-bold tracking-[0.12em] uppercase">{name}</p>
             <p className="shrink-0 text-right text-[10px] leading-tight font-semibold tracking-[0.1em] text-wine-on-muted uppercase">
