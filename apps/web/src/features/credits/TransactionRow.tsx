@@ -49,9 +49,7 @@ export function TransactionRow({ transaction: t, index }: { transaction: CreditT
         <p className="truncate text-[13px] text-muted-foreground">{subtitle(t)}</p>
       </div>
       <div className="shrink-0 text-right">
-        <p className={cn('numeral text-[22px]', t.amount > 0 ? 'text-status-completed' : 'text-wine-700')}>
-          {signedCredits(t.amount)}
-        </p>
+        <p className={cn('numeral text-[22px]', t.amount > 0 ? 'text-status-completed' : 'text-wine-700')}>{signedCredits(t.amount)}</p>
         <p className="text-[11px] font-semibold text-muted-foreground">balance {formatCredits(t.balance_after)}</p>
       </div>
     </li>

@@ -1,7 +1,8 @@
 import type { CreditTransaction } from '@/types'
 
 /** A small line of how the balance moved over time, drawn from the ledger. */
-export function BalanceTrend({ transactions }: { transactions: CreditTransaction[] }) {
+export function BalanceTrend({ transactions, tone = 'dark' }: { transactions: CreditTransaction[]; tone?: 'dark' | 'light' }) {
+  const colour = tone === 'dark' ? 'var(--brass-on-wine)' : 'var(--color-wine-700)'
   const points = [...transactions].sort((a, b) => a.created_at.localeCompare(b.created_at)).map((t) => t.balance_after)
   if (points.length < 2) return null
 
@@ -17,17 +18,22 @@ export function BalanceTrend({ transactions }: { transactions: CreditTransaction
   const area = `${line} L${x(points.length - 1).toFixed(1)} ${h} L${x(0).toFixed(1)} ${h} Z`
 
   return (
-    <svg viewBox={`0 0 ${w} ${h}`} className="h-24 w-full" role="img" aria-label={`Balance trend, now ${points[points.length - 1]} credits`}>
+    <svg
+      viewBox={`0 0 ${w} ${h}`}
+      className="h-24 w-full"
+      role="img"
+      aria-label={`Balance trend, now ${points[points.length - 1]} credits`}
+    >
       <defs>
-        <linearGradient id="trend-fill" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="var(--brass-on-wine)" stopOpacity="0.35" />
-          <stop offset="100%" stopColor="var(--brass-on-wine)" stopOpacity="0" />
+        <linearGradient id={`trend-fill-${tone}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={colour} stopOpacity="0.35" />
+          <stop offset="100%" stopColor={colour} stopOpacity="0" />
         </linearGradient>
       </defs>
-      <path d={area} fill="url(#trend-fill)" />
-      <path d={line} fill="none" stroke="var(--brass-on-wine)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d={area} fill={`url(#trend-fill-${tone})`} />
+      <path d={line} fill="none" stroke={colour} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
       {points.map((v, i) => (
-        <circle key={i} cx={x(i)} cy={y(v)} r={i === points.length - 1 ? 5 : 3.5} fill="var(--brass-on-wine)" />
+        <circle key={i} cx={x(i)} cy={y(v)} r={i === points.length - 1 ? 5 : 3.5} fill={colour} />
       ))}
     </svg>
   )

@@ -2,6 +2,7 @@ import { useMemo, useState, useSyncExternalStore } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowDownLeft, ArrowRight, ArrowUpRight, Clock, ReceiptText, ShieldCheck } from 'lucide-react'
 import { BalanceTrend } from '@/features/credits/BalanceTrend'
+import { BankCard } from '@/features/credits/BankCard'
 import { TransactionRow } from '@/features/credits/TransactionRow'
 import { api, sessionStore } from '@/lib/api'
 import { formatCredits } from '@/lib/format'
@@ -22,14 +23,31 @@ const rules = [
   { icon: ReceiptText, text: 'You start with 3 credits, so you can ask for help straight away.' },
 ]
 
-function Stat({ icon: Icon, label, value }: { icon: typeof ArrowDownLeft; label: string; value: string }) {
+const statTones = {
+  earned: { box: 'bg-status-completed-bg', icon: 'text-status-completed', num: 'text-status-completed' },
+  spent: { box: 'bg-primary-soft', icon: 'text-wine-700', num: 'text-wine-700' },
+  neutral: { box: 'bg-muted', icon: 'text-muted-foreground', num: 'text-foreground' },
+} as const
+
+function Stat({
+  icon: Icon,
+  label,
+  value,
+  tone,
+}: {
+  icon: typeof ArrowDownLeft
+  label: string
+  value: string
+  tone: keyof typeof statTones
+}) {
+  const t = statTones[tone]
   return (
-    <div className="flex items-center gap-3 px-4 py-3.5 sm:px-6">
-      <Icon className="size-5 shrink-0 text-brass" aria-hidden="true" />
-      <p className="flex flex-col sm:flex-row sm:items-baseline sm:gap-2.5">
-        <span className="numeral text-[26px] text-white">{value}</span>
-        <span className="text-xs font-semibold text-wine-on-muted">{label}</span>
-      </p>
+    <div className={cn('rounded-[24px] p-4 sm:p-5', t.box)}>
+      <dt className="flex items-center gap-1.5 text-xs font-bold tracking-[0.08em] text-muted-foreground uppercase">
+        <Icon className={cn('size-4', t.icon)} aria-hidden="true" />
+        {label}
+      </dt>
+      <dd className={cn('numeral mt-2 text-[40px] sm:text-[52px]', t.num)}>{value}</dd>
     </div>
   )
 }
@@ -56,40 +74,35 @@ export function CreditsPage() {
         </h1>
       </header>
 
-      <section
-        aria-label="Balance"
-        className="grain tile-in relative mt-7 overflow-hidden rounded-[32px] bg-wine-800 text-white shadow-raised"
-        style={{ '--delay': '60ms' } as React.CSSProperties}
-      >
-        <div aria-hidden="true" className="rings pointer-events-none absolute inset-0" />
-        <div className="relative grid gap-6 p-6 sm:p-10 lg:grid-cols-[1fr_360px] lg:items-end">
-          <div>
-            <p className="text-sm font-semibold text-wine-on-muted">Available balance</p>
-            <p className="mt-2 flex items-baseline gap-3">
-              <span className="numeral text-[clamp(5rem,12vw,9rem)] text-white">{formatCredits(me.credit_balance)}</span>
-              <span className="font-heading text-2xl font-semibold text-wine-on-muted">
-                {me.credit_balance === 1 ? 'credit' : 'credits'}
-              </span>
-            </p>
-            <p className="mt-2 text-sm text-wine-on-muted">
-              That is {formatCredits(me.credit_balance)} {me.credit_balance === 1 ? 'hour' : 'hours'} of help you can ask for.
-            </p>
-            <Link
-              to="/"
-              className="press mt-6 inline-flex h-12 items-center gap-2 rounded-2xl bg-brass px-5 text-sm font-bold text-wine-900 hover:bg-brass/90"
-            >
-              Find help to spend them
-              <ArrowRight className="size-4" aria-hidden="true" />
-            </Link>
-          </div>
-          <div className="hidden lg:block">
-            <BalanceTrend transactions={all} />
-          </div>
+      <section aria-label="Balance" className="mt-7 grid items-center gap-6 lg:grid-cols-[460px_minmax(0,1fr)]">
+        <div className="tile-in" style={{ '--delay': '60ms' } as React.CSSProperties}>
+          <BankCard name={me.name} memberId={me.id} since={me.created_at} balance={me.credit_balance} />
         </div>
-        <div className="relative grid grid-cols-3 divide-x divide-white/15 border-t border-white/15 bg-wine-900/55 backdrop-blur-md">
-          <Stat icon={ArrowDownLeft} label="Earned" value={formatCredits(earned)} />
-          <Stat icon={ArrowUpRight} label="Spent" value={formatCredits(spent)} />
-          <Stat icon={ReceiptText} label="Entries" value={String(all.length)} />
+
+        <div className="tile-in space-y-4" style={{ '--delay': '140ms' } as React.CSSProperties}>
+          <dl className="grid grid-cols-3 gap-3 sm:gap-4">
+            <Stat icon={ArrowDownLeft} label="Earned" value={formatCredits(earned)} tone="earned" />
+            <Stat icon={ArrowUpRight} label="Spent" value={formatCredits(spent)} tone="spent" />
+            <Stat icon={ReceiptText} label="Entries" value={String(all.length)} tone="neutral" />
+          </dl>
+          <div className="flex flex-col gap-4 rounded-[28px] border bg-card p-5 shadow-card sm:flex-row sm:items-center sm:p-6">
+            <div className="min-w-0 flex-1">
+              <p className="font-heading text-xl font-bold tracking-[-0.03em]">
+                {formatCredits(me.credit_balance)} {me.credit_balance === 1 ? 'hour' : 'hours'} of help to spend
+              </p>
+              <p className="mt-1 text-sm text-muted-foreground">Ask a neighbour for help, or earn more by sharing a skill.</p>
+              <Link
+                to="/"
+                className="press mt-4 inline-flex h-11 items-center gap-2 rounded-2xl bg-wine-700 px-5 text-sm font-bold text-wine-on hover:bg-wine-600"
+              >
+                Find help
+                <ArrowRight className="size-4" aria-hidden="true" />
+              </Link>
+            </div>
+            <div className="w-full sm:w-52">
+              <BalanceTrend transactions={all} tone="light" />
+            </div>
+          </div>
         </div>
       </section>
 
