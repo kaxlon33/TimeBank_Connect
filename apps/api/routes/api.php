@@ -2,6 +2,12 @@
 
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\PasswordResetController;
+use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\GeographyController;
+use App\Http\Controllers\NearbyController;
+use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\SkillController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -23,4 +29,25 @@ Route::prefix('auth')->group(function () {
         Route::post('logout', [AuthController::class, 'logout']);
         Route::get('me', [AuthController::class, 'me']);
     });
+});
+
+// Reference data the sign-up form needs before anyone is signed in.
+Route::get('countries', [GeographyController::class, 'countries']);
+Route::get('areas', [GeographyController::class, 'areas'])->middleware('throttle:60,1');
+Route::get('categories', [CategoryController::class, 'index']);
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('profile', [ProfileController::class, 'show']);
+
+    Route::get('skills', [SkillController::class, 'index']);
+    Route::get('skills/{skill}', [SkillController::class, 'show'])->whereNumber('skill');
+    Route::get('my/skills', [SkillController::class, 'mine']);
+
+    Route::get('nearby', [NearbyController::class, 'index']);
+
+    Route::get('notifications', [NotificationController::class, 'index']);
+    Route::post('notifications/read-all', [NotificationController::class, 'markAllRead']);
+    Route::post('notifications/unread-all', [NotificationController::class, 'markAllUnread']);
+    Route::post('notifications/{id}/read', [NotificationController::class, 'markRead']);
+    Route::post('notifications/{id}/unread', [NotificationController::class, 'markUnread']);
 });
