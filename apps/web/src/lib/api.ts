@@ -176,21 +176,23 @@ async function mutate<T>(make: () => T, delay = 500): Promise<T> {
   return structuredClone(result)
 }
 
-function notify(n: Omit<AppNotification, 'id' | 'read_at' | 'created_at'>) {
-  db.notifications.unshift({ ...n, id: String(newId()), read_at: null, created_at: new Date().toISOString() })
-}
-
-function findRequest(id: ID): HelpRequest {
-  const r = db.requests.find((x) => x.id === id)
-  if (!r) throw new ApiError('Request not found', 404)
-  return r
-}
-
 /* ---------- auth ---------- */
 
 /** Demo data: when each member last used the app. Two members have been quiet for a while. */
 const LAST_ACTIVE_DAYS_AGO: Record<number, number> = { 2: 1, 3: 0, 4: 3, 5: 0, 6: 47, 7: 5, 8: 62, 9: 12, 10: 2 }
 const lastActive = (id: number) => new Date(Date.now() - (LAST_ACTIVE_DAYS_AGO[id] ?? 4) * 24 * 60 * 60 * 1000).toISOString()
+
+/** Re-reads the signed-in member (their credit balance changes when a session is confirmed). */
+async function refreshMember(): Promise<void> {
+  try {
+    const { data: user } = await get<Wrapped<User>>('/auth/me')
+    setSignedIn(true, user)
+    emit()
+    void api.getNotifications().catch(() => undefined)
+  } catch {
+    /* The next page load will refresh it. */
+  }
+}
 
 export const api = {
   async login(email: string, password: string): Promise<User> {
@@ -335,117 +337,42 @@ export const api = {
 
   /* ---------- help requests ---------- */
 
-  getRequests(box: 'received' | 'sent'): Promise<HelpRequest[]> {
-    return respond(
-      () =>
-        db.requests
-          .filter((r) => (box === 'received' ? r.provider.id : r.requester.id) === CURRENT_USER_ID)
-          .sort((a, b) => b.created_at.localeCompare(a.created_at)),
-      { empty: [] },
-    )
+  async getRequests(box: 'received' | 'sent'): Promise<HelpRequest[]> {
+    return live(async () => (await get<Wrapped<HelpRequest[]>>('/help-requests', { query: { box } })).data, [])
   },
 
-  createRequest(skillId: ID, hours: number, message: string, proposedAt: string | null): Promise<HelpRequest> {
-    return mutate(() => {
-      const skill = db.skills.find((s) => s.id === skillId)
-      if (!skill) throw new ApiError('Skill not found', 404)
-      if (skill.user.id === CURRENT_USER_ID) throw new ApiError('You cannot request your own skill.')
-      if (me().credit_balance < hours) {
-        throw new ApiError(`You need ${hours} credits but have ${me().credit_balance}.`, 422, { hours: 'Not enough credits.' })
-      }
-      const request: HelpRequest = {
-        id: newId(),
-        skill: { id: skill.id, title: skill.title },
-        requester: { ...me() },
-        provider: skill.user,
-        hours,
-        credits: hours,
-        message,
-        status: 'pending',
-        proposed_at: proposedAt,
-        created_at: new Date().toISOString(),
-        responded_at: null,
-        provider_done_at: null,
-        completed_at: null,
-        cancelled_at: null,
-        cancel_reason: null,
-        reviewed_by_me: false,
-      }
-      db.requests.unshift(request)
-      return request
-    }, 650)
+  async createRequest(skillId: ID, hours: number, message: string, proposedAt: string | null): Promise<HelpRequest> {
+    const { data } = await post<Wrapped<HelpRequest>>('/help-requests', {
+      skill_id: skillId,
+      hours,
+      message,
+      proposed_at: proposedAt,
+    })
+    return data
   },
 
-  respondToRequest(id: ID, action: 'accept' | 'decline' | 'mark_done' | 'cancel'): Promise<HelpRequest> {
-    return mutate(() => {
-      const r = findRequest(id)
-      const now = new Date().toISOString()
-      if (action === 'accept' && r.status === 'pending') Object.assign(r, { status: 'accepted', responded_at: now })
-      else if (action === 'decline' && r.status === 'pending') Object.assign(r, { status: 'declined', responded_at: now })
-      else if (action === 'mark_done' && r.status === 'accepted')
-        Object.assign(r, { status: 'awaiting_confirmation', provider_done_at: now })
-      else if (action === 'cancel' && (r.status === 'pending' || r.status === 'accepted'))
-        Object.assign(r, { status: 'cancelled', cancelled_at: now, cancel_reason: 'Cancelled by member' })
-      else throw new ApiError('This request has already changed. Refresh to see the latest status.', 409)
-      return r
-    }, 400)
+  async respondToRequest(id: ID, action: 'accept' | 'decline' | 'mark_done' | 'cancel'): Promise<HelpRequest> {
+    const path = action === 'mark_done' ? 'mark-done' : action
+    const { data } = await post<Wrapped<HelpRequest>>(`/help-requests/${id}/${path}`)
+    return data
   },
 
-  /** Money-like action: never optimistic, the UI waits for this to resolve. */
-  confirmRequest(id: ID): Promise<HelpRequest> {
-    return mutate(() => {
-      const r = findRequest(id)
-      if (r.status !== 'awaiting_confirmation') throw new ApiError('This session was already confirmed.', 409)
-      const user = me()
-      if (user.credit_balance < r.credits) throw new ApiError('You do not have enough credits to confirm this session.', 422)
-      user.credit_balance = Math.round((user.credit_balance - r.credits) * 100) / 100
-      Object.assign(r, { status: 'completed', completed_at: new Date().toISOString() })
-      db.transactions.unshift({
-        id: newId(),
-        type: 'session_debit',
-        amount: -r.credits,
-        balance_after: user.credit_balance,
-        counterparty: { id: r.provider.id, name: r.provider.name },
-        help_request_id: r.id,
-        skill_title: r.skill.title,
-        note: null,
-        created_at: new Date().toISOString(),
-      })
-      notify({
-        type: 'request_completed',
-        title: `Session completed with ${r.provider.name.split(' ')[0]}`,
-        body: `${r.credits} ${r.credits === 1 ? 'credit' : 'credits'} sent for ${r.skill.title}.`,
-        link: '/credits',
-      })
-      return r
-    }, 900)
+  /** Money-like action: never optimistic, the UI waits for this to resolve. The server moves the credits. */
+  async confirmRequest(id: ID): Promise<HelpRequest> {
+    const { data } = await post<Wrapped<HelpRequest>>(`/help-requests/${id}/complete`)
+    await refreshMember() // the balance in the header changed
+    return data
   },
 
-  submitReview(requestId: ID, rating: number, comment: string): Promise<Review> {
-    return mutate(() => {
-      const r = findRequest(requestId)
-      const other = r.requester.id === CURRENT_USER_ID ? r.provider : r.requester
-      r.reviewed_by_me = true
-      const review: Review = {
-        id: newId(),
-        help_request_id: r.id,
-        reviewer: { id: CURRENT_USER_ID, name: me().name },
-        reviewee: { id: other.id, name: other.name },
-        rating,
-        comment,
-        status: 'visible',
-        report_count: 0,
-        created_at: new Date().toISOString(),
-      }
-      db.reviews.unshift(review)
-      return review
-    }, 600)
+  async submitReview(requestId: ID, rating: number, comment: string): Promise<Review> {
+    const { data } = await post<Wrapped<Review>>(`/help-requests/${requestId}/reviews`, { rating, comment })
+    return data
   },
 
   /* ---------- credits & notifications ---------- */
 
-  getTransactions(): Promise<CreditTransaction[]> {
-    return respond(() => db.transactions, { empty: [] })
+  async getTransactions(): Promise<CreditTransaction[]> {
+    return live(async () => (await get<Wrapped<CreditTransaction[]>>('/credits/transactions')).data, [])
   },
 
   async getNotifications(): Promise<AppNotification[]> {

@@ -116,7 +116,11 @@ export async function http<T>(method: Method, path: string, options: Options = {
           ? 'Something went wrong on our side. Please try again.'
           : 'Something went wrong.'
   const message = payload?.message && res.status !== 500 ? payload.message : fallback
-  throw new ApiError(res.status === 422 && Object.keys(errors).length ? 'Please fix the highlighted fields.' : message, res.status, errors)
+  // One wrong field reads best as its own message ("You need 2 credits but have 1."); several become a general nudge.
+  const fields = Object.values(errors)
+  const validation =
+    res.status === 422 && fields.length > 0 ? (fields.length === 1 ? fields[0] : 'Please fix the highlighted fields.') : message
+  throw new ApiError(validation, res.status, errors)
 }
 
 export const get = <T>(path: string, options?: Options) => http<T>('GET', path, options)
