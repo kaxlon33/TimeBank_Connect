@@ -3,7 +3,10 @@
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\CreditController;
 use App\Http\Controllers\GeographyController;
+use App\Http\Controllers\HelpRequestController;
+use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\NearbyController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
@@ -44,6 +47,20 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('my/skills', [SkillController::class, 'mine']);
 
     Route::get('nearby', [NearbyController::class, 'index']);
+
+    Route::get('help-requests', [HelpRequestController::class, 'index']);
+    Route::post('help-requests', [HelpRequestController::class, 'store'])->middleware('throttle:20,1');
+    Route::prefix('help-requests/{id}')->whereNumber('id')->group(function () {
+        Route::get('/', [HelpRequestController::class, 'show']);
+        Route::post('accept', [HelpRequestController::class, 'accept']);
+        Route::post('decline', [HelpRequestController::class, 'decline']);
+        Route::post('mark-done', [HelpRequestController::class, 'markDone']);
+        Route::post('cancel', [HelpRequestController::class, 'cancel']);
+        Route::post('complete', [HelpRequestController::class, 'complete']);
+        Route::post('reviews', [ReviewController::class, 'store']);
+    });
+
+    Route::get('credits/transactions', [CreditController::class, 'transactions']);
 
     Route::get('notifications', [NotificationController::class, 'index']);
     Route::post('notifications/read-all', [NotificationController::class, 'markAllRead']);
