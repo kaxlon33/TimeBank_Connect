@@ -28,6 +28,14 @@ class User extends Authenticatable
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 
+    /** Same defaults as the table, so a freshly created model is complete without a reload. */
+    protected $attributes = [
+        'role' => 'member',
+        'status' => 'active',
+        'credit_balance' => 0,
+        'trust_score' => 61.25,
+    ];
+
     /**
      * The attributes that are mass assignable.
      *
