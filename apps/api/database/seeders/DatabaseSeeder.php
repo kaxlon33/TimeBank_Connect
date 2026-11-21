@@ -23,6 +23,7 @@ class DatabaseSeeder extends Seeder
             BadgeSeeder::class,
             SettingSeeder::class,
             DemoDataSeeder::class,
+            NotificationSeeder::class,
         ]);
     }
 }
