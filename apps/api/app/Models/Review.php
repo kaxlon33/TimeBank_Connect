@@ -13,6 +13,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class Review extends Model
 {
+    /** Same default as the table, so a new review is complete without a reload. */
+    protected $attributes = ['status' => 'visible'];
+
     protected $fillable = [
         'rating',
         'comment',
