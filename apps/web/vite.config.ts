@@ -10,6 +10,13 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  server: {
+    // The browser talks to one origin; Vite forwards API calls to Laravel (`php artisan serve`).
+    proxy: {
+      '/api': { target: 'http://127.0.0.1:8000', changeOrigin: false },
+      '/sanctum': { target: 'http://127.0.0.1:8000', changeOrigin: false },
+    },
+  },
   build: {
     rollupOptions: {
       output: {
