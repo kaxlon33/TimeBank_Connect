@@ -1,9 +1,9 @@
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowLeft, ArrowRight, Loader2, MailCheck } from 'lucide-react'
+import { ArrowLeft, Loader2, MailCheck } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { AuthScene } from '@/features/auth/AuthScene'
-import { api, ApiError, DEMO_RESET_TOKEN } from '@/lib/api'
+import { api, ApiError } from '@/lib/api'
 import { describedBy } from '@/lib/forms'
 
 export function ForgotPasswordPage() {
@@ -48,26 +48,21 @@ export function ForgotPasswordPage() {
             Check your email
           </h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            If an account exists for <span className="font-bold text-foreground">{sentTo}</span>, we have sent a link to choose a new password. It works for one hour.
+            If an account exists for <span className="font-bold text-foreground">{sentTo}</span>, we have sent a link to choose a new
+            password. It works for one hour.
           </p>
 
-          <div className="mt-5 rounded-2xl bg-primary-soft p-4">
-            <p className="text-xs font-bold tracking-[0.08em] text-wine-700 uppercase">Demo only</p>
-            <p className="mt-1 text-sm text-wine-800">No email is sent in this demo. Use this button instead of the link in the email.</p>
-            <Link
-              to={`/reset-password?token=${DEMO_RESET_TOKEN}&email=${encodeURIComponent(sentTo)}`}
-              className="press mt-3 inline-flex h-11 items-center gap-2 rounded-xl bg-wine-700 px-4 text-sm font-bold text-wine-on hover:bg-wine-600"
-            >
-              Open the reset link
-              <ArrowRight className="size-4" aria-hidden="true" />
-            </Link>
-          </div>
+          {import.meta.env.DEV ? (
+            <div className="mt-5 rounded-2xl bg-primary-soft p-4">
+              <p className="text-xs font-bold tracking-[0.08em] text-wine-700 uppercase">Local development only</p>
+              <p className="mt-1 text-sm text-wine-800">
+                No real email is sent here. Laravel writes the message, with the reset link, to{' '}
+                <code>apps/api/storage/logs/laravel.log</code>.
+              </p>
+            </div>
+          ) : null}
 
-          <button
-            type="button"
-            onClick={() => setSentTo(null)}
-            className="mt-5 text-sm font-semibold text-wine-700 hover:underline"
-          >
+          <button type="button" onClick={() => setSentTo(null)} className="mt-5 text-sm font-semibold text-wine-700 hover:underline">
             Use a different email
           </button>
         </div>

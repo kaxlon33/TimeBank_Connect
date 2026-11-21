@@ -2,7 +2,7 @@ import { MapPin, Sparkles } from 'lucide-react'
 import { Avatar } from '@/components/Avatar'
 import { badgeIcons } from '@/features/profile/badges'
 import { whereLabel } from '@/lib/where'
-import type { User } from '@/types'
+import type { PublicProfile } from '@/types'
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
@@ -13,7 +13,7 @@ function Stat({ label, value }: { label: string; value: string }) {
   )
 }
 
-export function HelperCard({ helper, distance }: { helper: User; distance: number | null }) {
+export function HelperCard({ helper, distance }: { helper: PublicProfile; distance: number | null }) {
   return (
     <section
       aria-label={`About ${helper.name}`}

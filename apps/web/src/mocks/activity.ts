@@ -19,27 +19,27 @@ export const transactions: CreditTransaction[] = [
 
 export const notifications: AppNotification[] = [
   {
-    id: 9, type: 'request_received', title: 'New request from Aye Chan',
+    id: '9', type: 'request_received', title: 'New request from Aye Chan',
     body: 'Python and spreadsheet tutoring, 1 hour', link: '/requests?tab=received', read_at: null, created_at: hoursAgo(3),
   },
   {
-    id: 8, type: 'request_marked_done', title: 'Daniel marked your session as done',
+    id: '8', type: 'request_marked_done', title: 'Daniel marked your session as done',
     body: 'Flat-pack furniture assembly. Confirm to send 1 credit.', link: '/requests?tab=sent', read_at: null, created_at: daysAgo(1, 13),
   },
   {
-    id: 7, type: 'request_accepted', title: 'You accepted Sophie’s request',
+    id: '7', type: 'request_accepted', title: 'You accepted Sophie’s request',
     body: 'Python and spreadsheet tutoring, 1.5 hours', link: '/requests?tab=received', read_at: daysAgo(2), created_at: daysAgo(2),
   },
   {
-    id: 6, type: 'review_received', title: 'Hassan left you a 4 star review',
+    id: '6', type: 'review_received', title: 'Hassan left you a 4 star review',
     body: '“Well organised, boxes were all labelled.”', link: '/profile', read_at: daysAgo(8), created_at: daysAgo(9, 14),
   },
   {
-    id: 5, type: 'request_completed', title: 'Session completed with Hassan',
+    id: '5', type: 'request_completed', title: 'Session completed with Hassan',
     body: '2.5 credits sent for Help moving boxes.', link: '/credits', read_at: daysAgo(10), created_at: daysAgo(10, 18),
   },
   {
-    id: 4, type: 'badge_awarded', title: 'You earned the First Exchange badge',
+    id: '4', type: 'badge_awarded', title: 'You earned the First Exchange badge',
     body: 'Thanks for helping a neighbour for the first time.', link: '/profile', read_at: daysAgo(24), created_at: daysAgo(25, 18),
   },
 ]

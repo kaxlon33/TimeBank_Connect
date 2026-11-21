@@ -1,7 +1,8 @@
 /**
- * Thin data layer for the clickable prototype. Every function returns mock data after a
- * short delay, so pages already handle loading, empty and error states. When the Laravel
- * API is ready, each body becomes a fetch() call with the same signature and return type.
+ * The app's data layer. Login, sign-up, password reset, skills browse and detail, nearby helpers,
+ * notifications, the profile and the reference lists (countries, areas, categories) call the Laravel API.
+ * Everything else (requests, credits, skill and profile changes, admin) still returns demo data after a
+ * short delay, with the same signatures, and moves to the API one group at a time.
  *
  * Review helper: add ?state=loading | empty | error to any page URL to force that state.
  */
@@ -18,6 +19,7 @@ import type {
   ID,
   NearbyHelper,
   ProfileInput,
+  PublicProfile,
   RegisterInput,
   ReportedItem,
   Review,
@@ -29,30 +31,17 @@ import type {
   UserStatus,
 } from '@/types'
 import { areaSuggestions, countries } from '@/mocks/geo'
-import { CURRENT_USER_ID, homeOffsets, users } from '@/mocks/users'
+import { CURRENT_USER_ID, users } from '@/mocks/users'
 import { categories, skills, slugify } from '@/mocks/skills'
 import { helpRequests } from '@/mocks/requests'
-import {
-  adminStats,
-  appSettings,
-  auditLog,
-  notifications,
-  reportedItems,
-  reviews,
-  transactions,
-} from '@/mocks/activity'
-import { distanceKm } from './format'
+import { adminStats, appSettings, auditLog, notifications, reportedItems, reviews, transactions } from '@/mocks/activity'
+import { ApiError, get, post, setUnauthorizedHandler } from './http'
 import { readStored, removeStored, writeStored } from './storage'
 
-export class ApiError extends Error {
-  status: number
-  errors: Record<string, string>
-  constructor(message: string, status = 422, errors: Record<string, string> = {}) {
-    super(message)
-    this.status = status
-    this.errors = errors
-  }
-}
+export { ApiError }
+
+/** The API's single-resource and list responses are wrapped as `{ data: ... }`. */
+type Wrapped<T> = { data: T }
 
 const db = {
   users: structuredClone(users),
@@ -82,28 +71,52 @@ export interface SessionSnapshot {
 }
 
 const listeners = new Set<() => void>()
-// The member who is logged in. Logging in as the admin switches it, so the admin pages show the admin.
-const storedSession = readStored<{ email: string } | null>('session', null)
+// The signed-in member is remembered in the browser so a refresh keeps them in; the API confirms it on start-up.
+const storedSession = readStored<{ email: string; user?: User } | null>('session', null)
+// The real member returned by the API. Pages that are not on the API yet still read the demo data (below),
+// which mirrors the seeded database, so a demo account sees the same people on both sides.
+let realMe: User | null = storedSession?.user ?? null
 let currentUserId: number =
   (storedSession && db.users.find((u) => u.email.toLowerCase() === storedSession.email.toLowerCase())?.id) || CURRENT_USER_ID
-const me = () => {
+const me = (): User => {
+  if (realMe) return realMe
   const user = db.users.find((u) => u.id === currentUserId)
   if (!user) throw new Error('Signed-in mock user missing')
   return user
 }
 let signedIn = storedSession !== null
-let snapshot: SessionSnapshot = { me: me(), unread: db.notifications.filter((n) => !n.read_at).length, signedIn, openReports: db.reported.length }
+let unreadCount = 0
+let snapshot: SessionSnapshot = { me: me(), unread: unreadCount, signedIn, openReports: db.reported.length }
 
-function setSignedIn(value: boolean, email?: string) {
+function setSignedIn(value: boolean, user?: User) {
   signedIn = value
-  if (value) writeStored('session', { email })
-  else removeStored('session')
+  if (value && user) {
+    realMe = user
+    currentUserId = db.users.find((u) => u.email.toLowerCase() === user.email.toLowerCase())?.id ?? CURRENT_USER_ID
+    writeStored('session', { email: user.email, user })
+  } else if (!value) {
+    realMe = null
+    unreadCount = 0
+    removeStored('session')
+  }
 }
 
 function emit() {
-  snapshot = { me: { ...me() }, unread: db.notifications.filter((n) => !n.read_at).length, signedIn, openReports: db.reported.length }
+  snapshot = { me: { ...me() }, unread: unreadCount, signedIn, openReports: db.reported.length }
   listeners.forEach((l) => l())
 }
+
+function setUnread(list: AppNotification[]) {
+  unreadCount = list.filter((n) => !n.read_at).length
+  emit()
+}
+
+// If the API says the session has ended (for example it expired), show the login page.
+setUnauthorizedHandler(() => {
+  if (!signedIn) return
+  setSignedIn(false)
+  emit()
+})
 
 export const sessionStore = {
   subscribe(listener: () => void) {
@@ -147,6 +160,15 @@ async function respond<T>(make: () => T, { empty, delay = 450, signal }: Respond
   return structuredClone(make())
 }
 
+/** A real API call that still honours the ?state=loading | empty | error review helper. */
+async function live<T>(call: () => Promise<T>, empty?: T): Promise<T> {
+  const forced = forcedState()
+  if (forced === 'loading') return new Promise<T>(() => undefined)
+  if (forced === 'error') throw new ApiError('We could not reach the server. Check your connection and try again.', 503)
+  if (forced === 'empty' && empty !== undefined) return empty
+  return call()
+}
+
 async function mutate<T>(make: () => T, delay = 500): Promise<T> {
   await wait(delay)
   const result = make()
@@ -155,7 +177,7 @@ async function mutate<T>(make: () => T, delay = 500): Promise<T> {
 }
 
 function notify(n: Omit<AppNotification, 'id' | 'read_at' | 'created_at'>) {
-  db.notifications.unshift({ ...n, id: newId(), read_at: null, created_at: new Date().toISOString() })
+  db.notifications.unshift({ ...n, id: String(newId()), read_at: null, created_at: new Date().toISOString() })
 }
 
 function findRequest(id: ID): HelpRequest {
@@ -170,123 +192,102 @@ function findRequest(id: ID): HelpRequest {
 const LAST_ACTIVE_DAYS_AGO: Record<number, number> = { 2: 1, 3: 0, 4: 3, 5: 0, 6: 47, 7: 5, 8: 62, 9: 12, 10: 2 }
 const lastActive = (id: number) => new Date(Date.now() - (LAST_ACTIVE_DAYS_AGO[id] ?? 4) * 24 * 60 * 60 * 1000).toISOString()
 
-/** The demo reset link carries this token. The real API will send a one-time token by email. */
-export const DEMO_RESET_TOKEN = 'demo-reset-token'
-const passwordChanges = new Map<string, string>()
-
-/** True when one of the member's weekly slots covers the current time. */
-function isFreeNow(slots: AvailabilitySlot[]): boolean {
-  const now = new Date()
-  const hhmm = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
-  return slots.some((s) => s.weekday === now.getDay() && s.start_time <= hhmm && hhmm < s.end_time)
-}
-
 export const api = {
   async login(email: string, password: string): Promise<User> {
-    await wait(600)
-    const user = db.users.find((u) => u.email.toLowerCase() === email.trim().toLowerCase())
-    const expected = (user && passwordChanges.get(user.email.toLowerCase())) ?? 'password'
-    if (!user || password !== expected) throw new ApiError('Email or password is incorrect', 422)
-    if (user.status === 'suspended') throw new ApiError('This account has been suspended. Contact the TimeBank team for help.', 403)
-    currentUserId = user.id
-    setSignedIn(true, user.email)
+    let user: User
+    try {
+      user = (await post<Wrapped<User>>('/auth/login', { email: email.trim(), password })).data
+    } catch (err) {
+      // The login form shows one message ("Email or password is incorrect"), not a per-field error.
+      if (err instanceof ApiError && err.errors.email) throw new ApiError(err.errors.email, err.status)
+      throw err
+    }
+    setSignedIn(true, user)
     emit()
-    return structuredClone(user)
+    void api.getNotifications().catch(() => undefined) // fills the unread badge
+    return user
   },
 
   async logout(): Promise<void> {
-    await wait(250)
+    try {
+      await post('/auth/logout')
+    } catch {
+      /* Signing out here must always work, even if the server cannot be reached. */
+    }
     setSignedIn(false)
     emit()
   },
 
+  /** Asks the API who is signed in. Keeps a remembered member signed in, or signs them out if the session ended. */
+  async restoreSession(): Promise<void> {
+    if (!signedIn) return
+    try {
+      const { data: user } = await get<Wrapped<User>>('/auth/me')
+      setSignedIn(true, user)
+      emit()
+      void api.getNotifications().catch(() => undefined)
+    } catch (err) {
+      // Only a 401 (handled globally) ends the session. A network error keeps the remembered member.
+      if (err instanceof ApiError && err.status === 401) return
+    }
+  },
+
   /** Always succeeds, so nobody can use this to find out which emails have an account. */
   async requestPasswordReset(email: string): Promise<{ email: string }> {
-    await wait(700)
-    return { email: email.trim() }
+    return post<{ email: string }>('/auth/forgot-password', { email: email.trim() })
   },
 
   async resetPassword(input: { token: string; email: string; password: string }): Promise<void> {
-    await wait(700)
-    if (input.token !== DEMO_RESET_TOKEN) throw new ApiError('This reset link has expired. Ask for a new one.', 422)
-    if (input.password.length < 8) throw new ApiError('Please fix the highlighted fields.', 422, { password: 'Use at least 8 characters.' })
-    passwordChanges.set(input.email.trim().toLowerCase(), input.password)
+    await post('/auth/reset-password', input)
   },
 
   async checkEmail(email: string): Promise<{ available: boolean }> {
-    await wait(350)
-    return { available: !db.users.some((u) => u.email.toLowerCase() === email.trim().toLowerCase()) }
+    return get<{ available: boolean }>('/auth/check-email', { query: { email: email.trim() } })
   },
 
   async register(input: RegisterInput): Promise<User> {
-    await wait(700)
-    if (db.users.some((u) => u.email.toLowerCase() === input.email.toLowerCase())) {
-      throw new ApiError('Please fix the highlighted fields.', 422, { email: 'This email is already registered.' })
-    }
-    setSignedIn(true, input.email)
+    const { data: user } = await post<Wrapped<User>>('/auth/register', {
+      name: input.name.trim(),
+      email: input.email.trim(),
+      password: input.password,
+      country_code: input.country_code,
+      area_name: input.area_name.trim(),
+    })
+    setSignedIn(true, user)
     emit()
-    return { ...structuredClone(me()), name: input.name, email: input.email, credit_balance: db.settings.starter_credit }
+    return user
   },
 
   /* ---------- geography ---------- */
 
-  getCountries(): Promise<Country[]> {
-    return respond(() => countries, { delay: 150 })
+  async getCountries(): Promise<Country[]> {
+    return live(async () => (await get<Wrapped<Country[]>>('/countries')).data)
   },
 
-  searchAreas(q: string, countryCode: string, signal?: AbortSignal): Promise<Area[]> {
-    const term = q.trim().toLowerCase()
-    return respond(
-      () =>
-        areaSuggestions
-          .filter((a) => (!countryCode || a.country_code === countryCode) && a.name.toLowerCase().includes(term))
-          .slice(0, 5),
-      { delay: 300, signal },
-    )
+  async searchAreas(q: string, countryCode: string, signal?: AbortSignal): Promise<Area[]> {
+    return (await get<Wrapped<Area[]>>('/areas', { query: { q: q.trim(), country_code: countryCode }, signal })).data
   },
 
   /* ---------- skills ---------- */
 
-  getCategories(): Promise<SkillCategory[]> {
-    return respond(() => db.categories.filter((c) => c.is_active), { delay: 150 })
+  async getCategories(): Promise<SkillCategory[]> {
+    return live(async () => (await get<Wrapped<SkillCategory[]>>('/categories')).data)
   },
 
-  searchSkills(params: SkillSearchParams, signal?: AbortSignal): Promise<Skill[]> {
-    const q = (params.q ?? '').trim().toLowerCase()
-    return respond(
-      () =>
-        db.skills
-          .filter((s) => s.status === 'active' && s.user.id !== CURRENT_USER_ID)
-          .filter((s) => !params.category || s.category.slug === params.category)
-          .filter(
-            (s) =>
-              !q ||
-              s.title.toLowerCase().includes(q) ||
-              s.description.toLowerCase().includes(q) ||
-              s.user.name.toLowerCase().includes(q) ||
-              (s.user.area?.name.toLowerCase().includes(q) ?? false),
-          )
-          .sort((a, b) => b.user.trust_score - a.user.trust_score),
-      { empty: [], signal, delay: 400 },
+  async searchSkills(params: SkillSearchParams, signal?: AbortSignal): Promise<Skill[]> {
+    return live(
+      async () => (await get<Wrapped<Skill[]>>('/skills', { query: { q: params.q?.trim(), category: params.category }, signal })).data,
+      [],
     )
   },
 
-  getSkill(id: ID): Promise<{ skill: Skill; helper: User; reviews: Review[] }> {
-    return respond(() => {
-      const skill = db.skills.find((s) => s.id === id && s.status !== 'removed')
-      if (!skill) throw new ApiError('This skill is no longer available.', 404)
-      const helper = db.users.find((u) => u.id === skill.user.id)
-      if (!helper) throw new ApiError('Helper not found', 404)
-      return {
-        skill,
-        helper,
-        reviews: db.reviews.filter((r) => r.reviewee.id === helper.id && r.status === 'visible'),
-      }
-    })
+  async getSkill(id: ID): Promise<{ skill: Skill; helper: PublicProfile; reviews: Review[] }> {
+    return live(async () => (await get<Wrapped<{ skill: Skill; helper: PublicProfile; reviews: Review[] }>>(`/skills/${id}`)).data)
   },
 
+  // Still on demo data: creating, editing and deleting skills is not on the API yet, and the list must match those writes.
   getMySkills(): Promise<Skill[]> {
-    return respond(() => db.skills.filter((s) => s.user.id === CURRENT_USER_ID && s.status !== 'removed'), { empty: [] })
+    return respond(() => db.skills.filter((s) => s.user.id === currentUserId && s.status !== 'removed'), { empty: [] })
   },
 
   createSkill(input: SkillInput): Promise<Skill> {
@@ -381,7 +382,8 @@ export const api = {
       const now = new Date().toISOString()
       if (action === 'accept' && r.status === 'pending') Object.assign(r, { status: 'accepted', responded_at: now })
       else if (action === 'decline' && r.status === 'pending') Object.assign(r, { status: 'declined', responded_at: now })
-      else if (action === 'mark_done' && r.status === 'accepted') Object.assign(r, { status: 'awaiting_confirmation', provider_done_at: now })
+      else if (action === 'mark_done' && r.status === 'accepted')
+        Object.assign(r, { status: 'awaiting_confirmation', provider_done_at: now })
       else if (action === 'cancel' && (r.status === 'pending' || r.status === 'accepted'))
         Object.assign(r, { status: 'cancelled', cancelled_at: now, cancel_reason: 'Cancelled by member' })
       else throw new ApiError('This request has already changed. Refresh to see the latest status.', 409)
@@ -446,48 +448,52 @@ export const api = {
     return respond(() => db.transactions, { empty: [] })
   },
 
-  getNotifications(): Promise<AppNotification[]> {
-    return respond(() => db.notifications, { empty: [], delay: 300 })
+  async getNotifications(): Promise<AppNotification[]> {
+    const list = await live(async () => (await get<Wrapped<AppNotification[]>>('/notifications')).data, [])
+    setUnread(list)
+    return list
   },
 
-  markNotificationRead(id: ID): Promise<void> {
-    return mutate(() => {
-      const n = db.notifications.find((x) => x.id === id)
-      if (n && !n.read_at) n.read_at = new Date().toISOString()
-    }, 150)
+  async markNotificationRead(id: string): Promise<void> {
+    await post(`/notifications/${id}/read`)
+    void api.getNotifications().catch(() => undefined)
   },
 
-  markNotificationUnread(id: ID): Promise<void> {
-    return mutate(() => {
-      const n = db.notifications.find((x) => x.id === id)
-      if (n) n.read_at = null
-    }, 150)
+  async markNotificationUnread(id: string): Promise<void> {
+    await post(`/notifications/${id}/unread`)
+    void api.getNotifications().catch(() => undefined)
   },
 
-  markAllNotificationsUnread(): Promise<void> {
-    return mutate(() => {
-      db.notifications.forEach((n) => {
-        n.read_at = null
-      })
-    }, 250)
+  async markAllNotificationsUnread(): Promise<void> {
+    await post('/notifications/unread-all')
+    void api.getNotifications().catch(() => undefined)
   },
 
-  markAllNotificationsRead(): Promise<void> {
-    return mutate(() => {
-      const now = new Date().toISOString()
-      db.notifications.forEach((n) => {
-        n.read_at ??= now
-      })
-    }, 250)
+  async markAllNotificationsRead(): Promise<void> {
+    await post('/notifications/read-all')
+    void api.getNotifications().catch(() => undefined)
   },
 
   /* ---------- profile ---------- */
 
-  getMe(): Promise<{ user: User; reviews: Review[] }> {
-    return respond(() => ({
-      user: me(),
-      reviews: db.reviews.filter((r) => r.reviewee.id === CURRENT_USER_ID && r.status === 'visible'),
-    }))
+  // Saving profile changes is not on the API yet: edits show for this visit and are not stored.
+  async getMe(): Promise<{ user: User; reviews: Review[] }> {
+    return live(async () => {
+      const { data } = await get<Wrapped<{ user: User; reviews: Review[] }>>('/profile')
+      const edited = realMe
+      // Keep what the member just changed on screen (edits are session-only until the profile endpoints exist).
+      const user = edited
+        ? {
+            ...data.user,
+            name: edited.name,
+            bio: edited.bio,
+            area: edited.area,
+            avatar_url: edited.avatar_url,
+            availability: edited.availability,
+          }
+        : data.user
+      return { user, reviews: data.reviews }
+    })
   },
 
   updateProfile(input: ProfileInput, avatarUrl: string | null): Promise<User> {
@@ -520,29 +526,15 @@ export const api = {
 
   /* ---------- nearby ---------- */
 
-  getNearbyHelpers(position: { lat: number; lng: number }, radiusKm: number): Promise<NearbyHelper[]> {
-    return respond(
-      () =>
-        db.users
-          .filter((u) => u.role === 'member' && u.status === 'active' && u.id !== CURRENT_USER_ID && u.area)
-          .map((u) => {
-            const [dLat, dLng] = homeOffsets[u.id] ?? [0, 0]
-            const lat = (u.area?.latitude ?? 0) + dLat
-            const lng = (u.area?.longitude ?? 0) + dLng
-            return {
-              user: { ...u },
-              distance_km: distanceKm(position.lat, position.lng, lat, lng),
-              lat,
-              lng,
-              available_now: isFreeNow(u.availability),
-              skills: db.skills
-                .filter((s) => s.user.id === u.id && s.status === 'active')
-                .map((s) => ({ id: s.id, title: s.title })),
-            }
+  async getNearbyHelpers(position: { lat: number; lng: number }, radiusKm: number): Promise<NearbyHelper[]> {
+    return live(
+      async () =>
+        (
+          await get<Wrapped<NearbyHelper[]>>('/nearby', {
+            query: { lat: position.lat, lng: position.lng, radius_km: Math.min(Math.max(radiusKm, 1), 200) },
           })
-          .filter((h) => h.distance_km <= radiusKm)
-          .sort((a, b) => a.distance_km - b.distance_km),
-      { empty: [], delay: 500 },
+        ).data,
+      [],
     )
   },
 
@@ -558,7 +550,13 @@ export const api = {
       () =>
         db.users
           .filter((u) => u.role === 'member')
-          .filter((u) => !term || u.name.toLowerCase().includes(term) || u.email.includes(term) || (u.area?.name.toLowerCase().includes(term) ?? false))
+          .filter(
+            (u) =>
+              !term ||
+              u.name.toLowerCase().includes(term) ||
+              u.email.includes(term) ||
+              (u.area?.name.toLowerCase().includes(term) ?? false),
+          )
           .map((u) => ({
             id: u.id,
             name: u.name,
@@ -625,10 +623,9 @@ export const api = {
   },
 
   getModeration(): Promise<{ reported: ReportedItem[]; skills: Skill[]; reviews: Review[]; audit: typeof auditLog }> {
-    return respond(
-      () => ({ reported: db.reported, skills: db.skills, reviews: db.reviews, audit: db.audit }),
-      { empty: { reported: [], skills: [], reviews: [], audit: [] } },
-    )
+    return respond(() => ({ reported: db.reported, skills: db.skills, reviews: db.reviews, audit: db.audit }), {
+      empty: { reported: [], skills: [], reviews: [], audit: [] },
+    })
   },
 
   moderate(kind: 'skill' | 'review', id: ID, action: 'remove' | 'restore', reason: string): Promise<void> {
@@ -644,7 +641,14 @@ export const api = {
         kind === 'skill'
           ? (db.skills.find((x) => x.id === id)?.title ?? 'Skill')
           : `Review by ${db.reviews.find((x) => x.id === id)?.reviewer.name ?? 'member'}`
-      db.audit.unshift({ id: newId(), action: `${kind}.${action}`, actor: 'Admin User', target, reason, created_at: new Date().toISOString() })
+      db.audit.unshift({
+        id: newId(),
+        action: `${kind}.${action}`,
+        actor: 'Admin User',
+        target,
+        reason,
+        created_at: new Date().toISOString(),
+      })
       // A removed item no longer needs a decision.
       if (action === 'remove') db.reported = db.reported.filter((r) => !(r.kind === kind && r.target_id === id))
     }, 450)

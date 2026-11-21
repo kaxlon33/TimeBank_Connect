@@ -7,13 +7,7 @@ export type UserStatus = 'active' | 'suspended'
 export type SkillStatus = 'active' | 'hidden' | 'removed'
 export type ReviewStatus = 'visible' | 'removed'
 
-export type RequestStatus =
-  | 'pending'
-  | 'accepted'
-  | 'awaiting_confirmation'
-  | 'completed'
-  | 'declined'
-  | 'cancelled'
+export type RequestStatus = 'pending' | 'accepted' | 'awaiting_confirmation' | 'completed' | 'declined' | 'cancelled'
 
 export type TransactionType = 'starter_grant' | 'session_debit' | 'session_credit' | 'admin_adjustment'
 
@@ -27,13 +21,7 @@ export type NotificationType =
   | 'review_received'
   | 'badge_awarded'
 
-export type BadgeCode =
-  | 'first_exchange'
-  | 'helping_hand'
-  | 'community_builder'
-  | 'top_rated'
-  | 'reliable'
-  | 'trusted_member'
+export type BadgeCode = 'first_exchange' | 'helping_hand' | 'community_builder' | 'top_rated' | 'reliable' | 'trusted_member'
 
 export interface Country {
   id: ID
@@ -85,6 +73,9 @@ export interface User extends UserSummary {
   created_at: string
   suspended_reason: string | null
 }
+
+/** What other members may see of someone: no email, no credit balance. */
+export type PublicProfile = Omit<User, 'email' | 'credit_balance' | 'suspended_reason'>
 
 export interface SkillCategory {
   id: ID
@@ -146,7 +137,8 @@ export interface CreditTransaction {
 }
 
 export interface AppNotification {
-  id: ID
+  /** A UUID string from the API. */
+  id: string
   type: NotificationType
   title: string
   body: string

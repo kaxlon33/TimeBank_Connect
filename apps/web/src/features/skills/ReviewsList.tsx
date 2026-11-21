@@ -1,10 +1,10 @@
 import { Avatar } from '@/components/Avatar'
 import { StarRating } from '@/components/StarRating'
 import { relativeTime } from '@/lib/format'
-import type { Review, User } from '@/types'
+import type { PublicProfile, Review } from '@/types'
 
 /** A big rating on the left, a calm list of reviews on the right. */
-export function ReviewsList({ helper, reviews }: { helper: User; reviews: Review[] }) {
+export function ReviewsList({ helper, reviews }: { helper: PublicProfile; reviews: Review[] }) {
   const first = helper.name.split(' ')[0]
 
   if (!reviews.length) {

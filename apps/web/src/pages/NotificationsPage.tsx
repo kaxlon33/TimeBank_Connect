@@ -6,7 +6,7 @@ import { NotificationRow } from '@/features/notifications/NotificationRow'
 import { api } from '@/lib/api'
 import { useAsync } from '@/lib/hooks'
 import { cn } from '@/lib/utils'
-import type { AppNotification, ID } from '@/types'
+import type { AppNotification } from '@/types'
 
 type Filter = 'all' | 'unread'
 
@@ -34,7 +34,7 @@ export function NotificationsPage() {
     .map((label) => ({ label, items: shown.filter((n) => groupOf(n) === label) }))
     .filter((g) => g.items.length > 0)
 
-  const stamp = (id: ID | null) =>
+  const stamp = (id: string | null) =>
     feed.setData((prev) => prev.map((n) => (id === null || n.id === id ? { ...n, read_at: n.read_at ?? new Date().toISOString() } : n)))
 
   async function open(n: AppNotification) {
