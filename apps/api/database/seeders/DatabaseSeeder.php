@@ -25,5 +25,8 @@ class DatabaseSeeder extends Seeder
             DemoDataSeeder::class,
             NotificationSeeder::class,
         ]);
+
+        // The demo members' trust scores are worked out from their sessions and reviews, not typed in.
+        $this->command->call('trust:recalculate');
     }
 }
