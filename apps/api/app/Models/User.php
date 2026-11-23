@@ -73,6 +73,7 @@ class User extends Authenticatable
             'role' => UserRole::class,
             'status' => UserStatus::class,
             'suspended_at' => 'datetime',
+            'last_active_at' => 'datetime',
             'credit_balance' => 'decimal:2',
             'trust_score' => 'decimal:2',
         ];

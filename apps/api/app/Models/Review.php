@@ -50,6 +50,12 @@ class Review extends Model
         return $this->belongsTo(User::class, 'removed_by');
     }
 
+    /** Member reports about this review. */
+    public function reports(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Report::class, 'target_id')->where('target_type', 'review');
+    }
+
     public function scopeVisible(Builder $query): Builder
     {
         return $query->where('status', ReviewStatus::Visible->value);

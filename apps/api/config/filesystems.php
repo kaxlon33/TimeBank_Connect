@@ -41,7 +41,8 @@ return [
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),
-            'url' => rtrim(env('APP_URL', 'http://localhost'), '/').'/storage',
+            // Relative on purpose: the React app and the API share one origin (Vite proxy in development).
+            'url' => '/storage',
             'visibility' => 'public',
             'throw' => false,
             'report' => false,

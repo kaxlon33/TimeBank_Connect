@@ -15,6 +15,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 class Skill extends Model
 {
+    /** Same default as the table, so a new skill is complete without a reload. */
+    protected $attributes = ['status' => 'active'];
+
     protected $fillable = [
         'category_id',
         'title',
@@ -30,6 +33,12 @@ class Skill extends Model
     }
 
     // ---- Relationships ---------------------------------------------------
+
+    /** Member reports about this skill post. */
+    public function reports(): HasMany
+    {
+        return $this->hasMany(Report::class, 'target_id')->where('target_type', 'skill');
+    }
 
     public function user(): BelongsTo
     {
