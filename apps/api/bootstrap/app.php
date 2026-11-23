@@ -14,6 +14,12 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         // Sanctum SPA cookie auth: requests from the configured front-end origins get a session.
         $middleware->statefulApi();
+
+        $middleware->alias([
+            'active' => \App\Http\Middleware\EnsureMemberIsActive::class,
+            'admin' => \App\Http\Middleware\EnsureAdmin::class,
+            'track' => \App\Http\Middleware\TrackLastActive::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // The API always answers in JSON, even if a client forgets the Accept header.

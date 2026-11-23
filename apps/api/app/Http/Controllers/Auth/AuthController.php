@@ -5,10 +5,10 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\RegisterRequest;
 use App\Http\Resources\UserResource;
-use App\Models\Area;
 use App\Models\Country;
 use App\Models\User;
 use App\Services\CreditService;
+use App\Services\GeocodingService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -29,18 +29,15 @@ class AuthController extends Controller
         ]);
     }
 
-    public function register(RegisterRequest $request, CreditService $credits): JsonResponse
+    public function register(RegisterRequest $request, CreditService $credits, GeocodingService $geocoder): JsonResponse
     {
         $data = $request->validated();
 
-        $user = DB::transaction(function () use ($data, $credits) {
-            $country = Country::query()->where('code', $data['country_code'])->firstOrFail();
+        // Find or place the area first (this may call Nominatim), so no database lock is held while we wait.
+        $country = Country::query()->where('code', $data['country_code'])->firstOrFail();
+        $area = $geocoder->resolveArea($country, $data['area_name']);
 
-            $area = Area::query()->firstOrCreate(
-                ['country_id' => $country->id, 'name_normalized' => Area::normalizeName($data['area_name'])],
-                ['name' => $data['area_name']],
-            );
-
+        $user = DB::transaction(function () use ($data, $credits, $area) {
             $user = User::query()->create([
                 'name' => $data['name'],
                 'email' => $data['email'],

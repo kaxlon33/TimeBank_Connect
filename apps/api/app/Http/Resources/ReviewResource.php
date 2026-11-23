@@ -18,7 +18,7 @@ class ReviewResource extends JsonResource
             'rating' => (int) $this->rating,
             'comment' => $this->comment ?? '',
             'status' => $this->status->value,
-            'report_count' => 0,
+            'report_count' => (int) ($this->open_reports_count ?? 0),
             'created_at' => $this->created_at?->toIso8601String(),
         ];
     }
