@@ -67,4 +67,25 @@ abstract class HelpRequestTestCase extends TestCase
 
         return $id;
     }
+
+    /** A real, valid PNG (no image library needed) as a data URL, like the browser sends. */
+    protected function pngDataUrl(int $w = 32, int $h = 32): string
+    {
+        $raw = '';
+        for ($y = 0; $y < $h; $y++) {
+            $raw .= "\0".str_repeat("\x20\x80\xC0", $w);
+        }
+        $chunk = fn (string $type, string $data) => pack('N', strlen($data)).$type.$data.pack('N', crc32($type.$data));
+        $png = "\x89PNG\r\n\x1a\n".$chunk('IHDR', pack('NNCCCCC', $w, $h, 8, 2, 0, 0, 0)).$chunk('IDAT', gzcompress($raw)).$chunk('IEND', '');
+
+        return 'data:image/png;base64,'.base64_encode($png);
+    }
+
+    protected function admin(): User
+    {
+        $admin = User::factory()->create(['name' => 'Ada Admin']);
+        $admin->forceFill(['role' => 'admin'])->save();
+
+        return $admin;
+    }
 }
