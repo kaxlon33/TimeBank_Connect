@@ -24,6 +24,8 @@ class DatabaseSeeder extends Seeder
             SettingSeeder::class,
             DemoDataSeeder::class,
             NotificationSeeder::class,
+            ActivitySeeder::class,
+            ReportSeeder::class,
         ]);
 
         // The demo members' trust scores are worked out from their sessions and reviews, not typed in.
