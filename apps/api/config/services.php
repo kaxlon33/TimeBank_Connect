@@ -35,4 +35,26 @@ return [
         ],
     ],
 
+    /*
+    | Third-party REST APIs. Only these two fixed hosts are ever called; member text is only
+    | ever sent as a query value, never used as part of a URL.
+    */
+
+    // OpenStreetMap Nominatim: turns an area name into coordinates. Usage policy: 1 request a second,
+    // a real User-Agent, cache results. Keep the User-Agent generic (no personal details).
+    'nominatim' => [
+        'enabled' => env('NOMINATIM_ENABLED', true),
+        'base_url' => env('NOMINATIM_URL', 'https://nominatim.openstreetmap.org'),
+        'user_agent' => env('NOMINATIM_USER_AGENT', 'TimeBankConnect/1.0 (student community project)'),
+        'timeout' => 5,
+        'cache_seconds' => 86400,
+        'min_interval_ms' => (int) env('NOMINATIM_MIN_INTERVAL_MS', 1000),
+    ],
+
+    // REST Countries: country names, flags and calling codes for the sign-up form.
+    'restcountries' => [
+        'base_url' => env('RESTCOUNTRIES_URL', 'https://restcountries.com/v3.1'),
+        'timeout' => 15,
+    ],
+
 ];
