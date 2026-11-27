@@ -131,16 +131,6 @@ Use two browsers: one for Tom (member) and one for Ada (admin). Start both serve
 
 Expected: the admin ledger check says "Ledger balanced".
 
-## Future work
-
-Ideas that were out of scope for the coursework (see `docs/product/prd.md`, section 3.2):
-
-- Groups of neighbours, leaderboards and a care pool.
-- Real payments instead of simulated credits.
-- Push notifications on phones (today the app checks every 15 seconds).
-- Native mobile apps, built from the same API.
-- Machine-learned helper matching, instead of the simple rule-based score.
-
 ## Notes
 
 - `apps/api/.env` holds secrets and is git-ignored. Never commit it.
