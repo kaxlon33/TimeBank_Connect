@@ -62,7 +62,7 @@ class ReadEndpointsTest extends TestCase
         }
     }
 
-    public function test_skill_search_lists_other_members_live_skills_and_filters(): void
+    public function test_skill_search_lists_live_skills_including_my_own_and_filters(): void
     {
         $me = $this->member('Me');
         $baker = $this->member('Baker Bea');
@@ -72,14 +72,16 @@ class ReadEndpointsTest extends TestCase
 
         $this->actingAs($me, 'web');
 
-        $res = $this->getJson('/api/skills')->assertOk();
-        $res->assertJsonCount(1, 'data')->assertJsonPath('data.0.title', 'Sourdough baking');
+        // Like a social feed: my own live skills appear next to everyone else's. Hidden ones do not.
+        $res = $this->getJson('/api/skills')->assertOk()->assertJsonCount(2, 'data');
+        $titles = collect($res->json('data'))->pluck('title')->sort()->values()->all();
+        $this->assertSame(['My own skill', 'Sourdough baking'], $titles);
         $res->assertJsonMissingPath('data.0.user.email');
 
         $this->getJson('/api/skills?q=bea')->assertJsonCount(1, 'data');       // matches the helper's name
-        $this->getJson('/api/skills?q=camden')->assertJsonCount(1, 'data');    // matches the helper's area
+        $this->getJson('/api/skills?q=camden')->assertJsonCount(2, 'data');    // both members live there
         $this->getJson('/api/skills?q=nothing-like-this')->assertJsonCount(0, 'data');
-        $this->getJson('/api/skills?category=cooking')->assertJsonCount(1, 'data');
+        $this->getJson('/api/skills?category=cooking')->assertJsonCount(2, 'data');
         $this->getJson('/api/skills?category=gardening')->assertJsonCount(0, 'data');
     }
 

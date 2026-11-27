@@ -37,7 +37,7 @@ class SkillController extends Controller
         $skills = Skill::query()
             ->listable()
             ->with(['category', 'user.area.country'])
-            ->where('skills.user_id', '!=', $request->user()->id)
+            // Your own live skills are listed too, like a social feed; the app labels them "Yours".
             ->when(! empty($data['category']), fn ($q) => $q->whereHas('category', fn ($c) => $c->where('slug', $data['category'])))
             ->when($term !== '', fn ($q) => $q->where(fn ($w) => $w
                 ->where('skills.title', 'like', $like)

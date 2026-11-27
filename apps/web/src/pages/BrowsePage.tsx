@@ -339,6 +339,7 @@ export function BrowsePage() {
                 index={0}
                 saved={saved.has(featured.skill.id)}
                 onToggleSave={toggleSave}
+                mine={featured.skill.user.id === me.id}
               />
             ) : null}
             {rest.map((item, i) => (
@@ -349,6 +350,7 @@ export function BrowsePage() {
                 index={i + (featured ? 1 : 0)}
                 saved={saved.has(item.skill.id)}
                 onToggleSave={toggleSave}
+                mine={item.skill.user.id === me.id}
               />
             ))}
           </div>

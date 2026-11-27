@@ -15,6 +15,12 @@ interface Props {
   saved: boolean
   onToggleSave: (id: number) => void
   featured?: boolean
+  /** The signed-in member's own skill: labelled "Yours", with no save heart. */
+  mine?: boolean
+}
+
+function YoursChip() {
+  return <span className="rounded-full bg-white px-3 py-1.5 text-xs font-bold text-wine-800 shadow-card">Yours</span>
 }
 
 function Rating({ skill, className }: { skill: Skill; className?: string }) {
@@ -53,7 +59,7 @@ function SaveButton({ skill, saved, onToggleSave }: Pick<Props, 'skill' | 'saved
   )
 }
 
-export function SkillCard({ skill, distance, index, saved, onToggleSave, featured = false }: Props) {
+export function SkillCard({ skill, distance, index, saved, onToggleSave, featured = false, mine = false }: Props) {
   const style = { '--delay': staggerDelay(index) } as CSSProperties
   const image = skillImage(skill)
   const where = whereLabel(skill.user.area, distance)
@@ -76,12 +82,13 @@ export function SkillCard({ skill, distance, index, saved, onToggleSave, feature
         <div className="absolute top-5 right-5 left-5 flex items-start justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2">
             <CategoryChip>{skill.category.name}</CategoryChip>
+            {mine ? <YoursChip /> : null}
             <span className="flex items-center gap-1.5 rounded-full bg-brass px-3 py-1.5 text-xs font-bold text-wine-900">
               <Star className="size-3.5 fill-wine-900" aria-hidden="true" />
               Top rated near you
             </span>
           </div>
-          <SaveButton skill={skill} saved={saved} onToggleSave={onToggleSave} />
+          {mine ? null : <SaveButton skill={skill} saved={saved} onToggleSave={onToggleSave} />}
         </div>
 
         <div className="flex flex-col gap-6 p-6 sm:p-8">
@@ -107,7 +114,7 @@ export function SkillCard({ skill, distance, index, saved, onToggleSave, feature
                 <p className="mt-1 text-[11px] font-semibold text-wine-on-muted">trust score</p>
               </div>
               <span className="flex h-12 items-center gap-2 rounded-2xl bg-stone-50 px-5 text-sm font-bold text-wine-700">
-                Request help
+                {mine ? 'View your skill' : 'Request help'}
                 <ArrowUpRight className="nudge size-4" aria-hidden="true" />
               </span>
             </div>
@@ -132,8 +139,11 @@ export function SkillCard({ skill, distance, index, saved, onToggleSave, feature
           className="size-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.06]"
         />
         <div className="absolute top-3.5 right-3.5 left-3.5 flex items-start justify-between gap-2">
-          <CategoryChip>{skill.category.name}</CategoryChip>
-          <SaveButton skill={skill} saved={saved} onToggleSave={onToggleSave} />
+          <div className="flex flex-wrap items-center gap-2">
+            <CategoryChip>{skill.category.name}</CategoryChip>
+            {mine ? <YoursChip /> : null}
+          </div>
+          {mine ? null : <SaveButton skill={skill} saved={saved} onToggleSave={onToggleSave} />}
         </div>
         <span className="absolute right-3.5 bottom-3.5 flex items-center gap-1.5 rounded-full bg-brass px-3 py-1.5 text-xs font-bold text-wine-900 shadow-card">
           <Clock className="size-3.5" aria-hidden="true" />1 h
