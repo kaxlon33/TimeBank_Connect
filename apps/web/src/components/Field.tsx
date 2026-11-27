@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { Info } from 'lucide-react'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
 
@@ -33,8 +34,9 @@ export function Field({ id, label, hint, error, status, optional, className, chi
           {error}
         </p>
       ) : hint ? (
-        <p id={`${id}-hint`} className="text-sm text-muted-foreground">
-          {hint}
+        <p id={`${id}-hint`} className="flex items-start gap-1.5 text-xs leading-relaxed text-muted-foreground">
+          <Info className="mt-px size-3.5 shrink-0 text-wine-600/70" aria-hidden="true" />
+          <span>{hint}</span>
         </p>
       ) : null}
     </div>

@@ -38,7 +38,7 @@ export function RegisterPage() {
       case 'country':
         return f.country ? undefined : 'Choose your country.'
       case 'area':
-        return f.area.trim() ? undefined : 'Enter your area or neighbourhood.'
+        return f.area.trim() ? undefined : 'Enter your town or district.'
     }
   }
 
@@ -173,7 +173,7 @@ export function RegisterPage() {
             describedBy={describedBy('country', errors.country)}
           />
         </Field>
-        <Field id="area" label="Area" error={errors.area} hint="Your neighbourhood, not your street.">
+        <Field id="area" label="Area" error={errors.area} hint="The town or district you live in. Never your street address.">
           <AreaAutocomplete
             id="area"
             value={form.area}

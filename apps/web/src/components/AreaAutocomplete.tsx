@@ -82,8 +82,8 @@ export function AreaAutocomplete({ id, value, countryCode, onChange, invalid, de
         aria-activedescendant={active >= 0 ? `${listId}-${active}` : undefined}
         aria-invalid={invalid || undefined}
         aria-describedby={describedBy}
-        placeholder={countryCode ? 'Start typing, e.g. Hackney' : 'Choose a country first'}
-        className="pl-9"
+        placeholder={countryCode ? 'Type your town or district, e.g. Camden' : 'Choose a country first'}
+        className="pl-9 text-sm placeholder:text-xs placeholder:font-medium"
         value={value}
         onChange={(e) => {
           onChange(e.target.value)

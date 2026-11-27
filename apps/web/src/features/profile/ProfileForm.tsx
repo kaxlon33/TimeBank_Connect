@@ -45,7 +45,7 @@ export function ProfileForm({ user, showHours = true }: { user: User; showHours?
     if (form.name.trim().length < 2) e.name = 'Please enter your name.'
     if (form.bio.length > BIO_MAX) e.bio = `Keep it under ${BIO_MAX} characters.`
     if (!form.country) e.country = 'Choose your country.'
-    if (form.area.trim().length < 2) e.area = 'Enter your neighbourhood.'
+    if (form.area.trim().length < 2) e.area = 'Enter your town or district.'
     return e
   }
 

@@ -1,3 +1,4 @@
+import { Circle } from 'lucide-react'
 import { scorePassword } from '@/lib/forms'
 import { cn } from '@/lib/utils'
 
@@ -22,15 +23,23 @@ export function PasswordStrength({ password, id }: { password: string; id: strin
           />
         ))}
       </div>
-      <p className="text-sm text-muted-foreground" aria-live="polite">
-        {password ? (
-          <>
-            Password strength: <span className={cn('font-semibold', level.text)}>{level.label}</span>
-          </>
-        ) : (
-          'At least 8 characters. Mix letters, numbers and symbols for a stronger password.'
-        )}
-      </p>
+      {password ? (
+        <p className="text-xs text-muted-foreground" aria-live="polite">
+          Password strength: <span className={cn('font-semibold', level.text)}>{level.label}</span>
+        </p>
+      ) : null}
+      {password ? null : (
+        <ul className="flex flex-wrap gap-x-4 gap-y-1 pt-0.5 text-xs text-muted-foreground" aria-label="Password tips">
+          <li className="flex items-center gap-1.5">
+            <Circle className="size-2.5 fill-current" aria-hidden="true" />
+            At least 8 characters
+          </li>
+          <li className="flex items-center gap-1.5">
+            <Circle className="size-2.5 fill-current" aria-hidden="true" />
+            Letters, numbers and symbols
+          </li>
+        </ul>
+      )}
     </div>
   )
 }
