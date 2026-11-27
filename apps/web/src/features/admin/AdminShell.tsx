@@ -1,6 +1,6 @@
 import { useState, useSyncExternalStore, type ReactNode } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
-import { Flag, LayoutGrid, Loader2, LogOut, Menu, ShieldAlert, ShieldCheck, SlidersHorizontal, Users, X } from 'lucide-react'
+import { Flag, Globe2, LayoutGrid, Loader2, LogOut, Menu, ShieldAlert, ShieldCheck, SlidersHorizontal, Users, X } from 'lucide-react'
 import { Dialog } from 'radix-ui'
 import { toast } from 'sonner'
 import { Avatar } from '@/components/Avatar'
@@ -14,6 +14,7 @@ const nav = [
   { to: '/admin', label: 'Overview', icon: LayoutGrid, end: true },
   { to: '/admin/members', label: 'Members', icon: Users },
   { to: '/admin/moderation', label: 'Moderation', icon: Flag, badge: true },
+  { to: '/admin/places', label: 'Places', icon: Globe2 },
   { to: '/admin/settings', label: 'Settings', icon: SlidersHorizontal },
 ] as const
 

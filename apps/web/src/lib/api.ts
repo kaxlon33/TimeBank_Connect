@@ -11,6 +11,9 @@ import type {
   AppNotification,
   AppSettings,
   Area,
+  AdminArea,
+  AdminCountry,
+  SuggestedHelper,
   AvailabilitySlot,
   Country,
   CreditTransaction,
@@ -466,6 +469,34 @@ export const api = {
 
   async saveSettings(settings: AppSettings): Promise<AppSettings> {
     return (await http<Wrapped<AppSettings>>('PUT', '/admin/settings', { body: settings })).data
+  },
+
+  async getAdminCountries(): Promise<AdminCountry[]> {
+    return live(async () => (await get<Wrapped<AdminCountry[]>>('/admin/countries')).data, [])
+  },
+
+  async toggleCountry(id: ID): Promise<AdminCountry> {
+    return (await post<Wrapped<AdminCountry>>(`/admin/countries/${id}/toggle`)).data
+  },
+
+  async getAdminAreas(countryCode: string, q: string, signal?: AbortSignal): Promise<AdminArea[]> {
+    return live(
+      async () => (await get<Wrapped<AdminArea[]>>('/admin/areas', { query: { country_code: countryCode, q: q.trim() }, signal })).data,
+      [],
+    )
+  },
+
+  async renameArea(id: ID, name: string): Promise<AdminArea> {
+    return (await http<Wrapped<AdminArea>>('PUT', `/admin/areas/${id}`, { body: { name } })).data
+  },
+
+  async deleteArea(id: ID): Promise<void> {
+    await http('DELETE', `/admin/areas/${id}`)
+  },
+
+  /** Helpers who could take on a request for this skill, best match first. */
+  async getSuggestedHelpers(skillId: ID): Promise<SuggestedHelper[]> {
+    return live(async () => (await get<Wrapped<SuggestedHelper[]>>(`/skills/${skillId}/helpers`)).data, [])
   },
 }
 

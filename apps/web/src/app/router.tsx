@@ -2,6 +2,7 @@ import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { AdminShell } from '@/features/admin/AdminShell'
 import { AppLayout } from './layouts/AppLayout'
 import { RedirectIfSignedIn, RequireAuth } from './RequireAuth'
+import { AdminGeographyPage } from '@/pages/admin/AdminGeographyPage'
 import { AdminMembersPage } from '@/pages/admin/AdminMembersPage'
 import { AdminModerationPage } from '@/pages/admin/AdminModerationPage'
 import { AdminOverviewPage } from '@/pages/admin/AdminOverviewPage'
@@ -54,6 +55,7 @@ export const router = createBrowserRouter([
       { path: '/admin', element: <AdminOverviewPage /> },
       { path: '/admin/members', element: <AdminMembersPage /> },
       { path: '/admin/moderation', element: <AdminModerationPage /> },
+      { path: '/admin/places', element: <AdminGeographyPage /> },
       { path: '/admin/settings', element: <AdminSettingsPage /> },
       { path: '/admin/profile', element: <AdminProfilePage /> },
     ],

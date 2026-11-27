@@ -87,6 +87,36 @@ export interface SkillCategory {
   skills_count: number
 }
 
+/** A country as the admin sees it, including switched-off ones. */
+export interface AdminCountry {
+  id: ID
+  code: string
+  name: string
+  flag_url: string | null
+  is_active: boolean
+  areas_count: number
+}
+
+/** An area as the admin sees it: where it is and how many members live there. */
+export interface AdminArea {
+  id: ID
+  name: string
+  country_code: string | null
+  country_name: string | null
+  members_count: number
+}
+
+/** A helper suggested for a request, with the reasons behind the score. */
+export interface SuggestedHelper {
+  id: ID
+  name: string
+  area: string | null
+  trust_score: number
+  distance_km: number | null
+  score: number
+  reasons: string[]
+}
+
 export interface Skill {
   id: ID
   title: string
