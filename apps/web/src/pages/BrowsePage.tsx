@@ -1,4 +1,4 @@
-import { useMemo, useState, useSyncExternalStore } from 'react'
+import { useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import {
   ArrowUpDown,
   ChefHat,
@@ -109,8 +109,19 @@ export function BrowsePage() {
     (v) => Array.isArray(v) && v.every((x) => typeof x === 'number'),
   )
   const saved = useMemo(() => new Set(savedIds), [savedIds])
+  // The last five searches, so a member can run them again in one tap.
+  const [recent, setRecent] = usePersistentState<string[]>(
+    'browse.recent',
+    [],
+    (v) => Array.isArray(v) && v.every((x) => typeof x === 'string'),
+  )
 
   const query = useDebouncedValue(text.trim(), 300)
+
+  useEffect(() => {
+    if (query.length < 2) return
+    setRecent((prev) => [query, ...prev.filter((q) => q !== query)].slice(0, 5))
+  }, [query, setRecent])
   const categories = useAsync(() => api.getCategories(), 'categories')
   const results = useAsync(
     (signal) => api.searchSkills({ q: query, category: category && category !== SAVED ? category : undefined }, signal),
@@ -218,6 +229,29 @@ export function BrowsePage() {
           />
         </div>
       </form>
+
+      {!text && recent.length > 0 ? (
+        <div className="mt-3 flex flex-wrap items-center gap-2 px-1" aria-label="Recent searches">
+          <span className="text-xs font-bold tracking-wide text-muted-foreground uppercase">Recent</span>
+          {recent.map((term) => (
+            <button
+              key={term}
+              type="button"
+              onClick={() => setText(term)}
+              className="press rounded-full border bg-card px-3 py-1 text-sm font-semibold hover:border-wine-600 hover:text-wine-700"
+            >
+              {term}
+            </button>
+          ))}
+          <button
+            type="button"
+            onClick={() => setRecent([])}
+            className="rounded-full px-2 py-1 text-xs font-semibold text-muted-foreground hover:text-foreground"
+          >
+            Clear
+          </button>
+        </div>
+      ) : null}
 
       {/* Categories as quiet tabs, with the result count on the same line. */}
       <div className="mt-8 flex flex-col lg:flex-row lg:items-end lg:justify-between lg:gap-8">

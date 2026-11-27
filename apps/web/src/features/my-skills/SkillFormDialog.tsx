@@ -1,4 +1,5 @@
 import { useId, useRef, useState } from 'react'
+import { removeStored, usePersistentState } from '@/lib/storage'
 import { Check, ImagePlus, Loader2, RotateCcw, X } from 'lucide-react'
 import { Dialog } from 'radix-ui'
 import { resizeToCover } from '@/lib/image'
@@ -52,9 +53,11 @@ function SkillForm({
   onClose: () => void
 }) {
   const id = useId()
-  const [title, setTitle] = useState(skill?.title ?? '')
+  // Title and description are kept on this device until the skill is saved, so a refresh does not lose them.
+  const draftKey = skill ? `draft.skill.${skill.id}` : 'draft.skill.new'
+  const [title, setTitle] = usePersistentState<string>(`${draftKey}.title`, skill?.title ?? '')
   const [categoryId, setCategoryId] = useState<ID | null>(skill?.category.id ?? null)
-  const [description, setDescription] = useState(skill?.description ?? '')
+  const [description, setDescription] = usePersistentState<string>(`${draftKey}.description`, skill?.description ?? '')
   const [errors, setErrors] = useState<Errors>({})
   const [busy, setBusy] = useState(false)
   const [failed, setFailed] = useState<string | null>(null)
@@ -95,6 +98,8 @@ function SkillForm({
     setFailed(null)
     try {
       await onSubmit({ title: title.trim(), category_id: categoryId, description: description.trim(), image_url: image })
+      removeStored(`${draftKey}.title`)
+      removeStored(`${draftKey}.description`)
       onClose()
     } catch (err) {
       setFailed(err instanceof Error ? err.message : 'We could not save your skill. Please try again.')

@@ -1,4 +1,5 @@
 import { useId, useMemo, useState, type FormEvent } from 'react'
+import { usePersistentState } from '@/lib/storage'
 import { Link } from 'react-router-dom'
 import { ArrowRight, Check, Loader2, Minus, Plus } from 'lucide-react'
 import { toast } from 'sonner'
@@ -50,7 +51,8 @@ export function RequestPanel({ skill, slots, balance }: Props) {
   const id = useId()
   const [hours, setHours] = useState(1)
   const [when, setWhen] = useState(FLEXIBLE)
-  const [message, setMessage] = useState('')
+  // The unsent message is kept on this device, so a page refresh does not lose it.
+  const [message, setMessage] = usePersistentState<string>(`draft.request.${skill.id}`, '')
   const [status, setStatus] = useState<'idle' | 'sending' | 'sent'>('idle')
   const [error, setError] = useState<string | null>(null)
 
@@ -67,6 +69,7 @@ export function RequestPanel({ skill, slots, balance }: Props) {
     try {
       await api.createRequest(skill.id, hours, message.trim(), when || null)
       setStatus('sent')
+      setMessage('')
       toast.success(`Request sent to ${firstName}`)
     } catch (err) {
       setStatus('idle')

@@ -125,7 +125,7 @@ export function SkillDetailPage() {
               </section>
             ) : (
               <>
-                <RequestPanel skill={skill} slots={slots} balance={me.credit_balance} />
+                <RequestPanel key={skill.id} skill={skill} slots={slots} balance={me.credit_balance} />
                 <div className="flex justify-center">
                   <ReportButton kind="skill" targetId={skill.id} subject={skill.title} label="Report this skill" />
                 </div>

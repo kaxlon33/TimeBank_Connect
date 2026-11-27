@@ -222,8 +222,19 @@ export const api = {
 
   /* ---------- geography ---------- */
 
+  /** Kept on this device for a day, so the sign-up list appears at once; a stale copy is used if the server is unreachable. */
   async getCountries(): Promise<Country[]> {
-    return live(async () => (await get<Wrapped<Country[]>>('/countries')).data)
+    const cached = readStored<{ at: number; list: Country[] } | null>('countries', null)
+    const fresh = cached && Array.isArray(cached.list) && Date.now() - cached.at < 24 * 60 * 60 * 1000
+    if (fresh) return cached.list
+    try {
+      const list = await live(async () => (await get<Wrapped<Country[]>>('/countries')).data)
+      writeStored('countries', { at: Date.now(), list })
+      return list
+    } catch (err) {
+      if (cached && Array.isArray(cached.list)) return cached.list
+      throw err
+    }
   },
 
   async searchAreas(q: string, countryCode: string, signal?: AbortSignal): Promise<Area[]> {
