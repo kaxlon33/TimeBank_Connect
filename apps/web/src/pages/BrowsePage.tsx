@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useSyncExternalStore } from 'react'
+import { useMemo, useState, useSyncExternalStore } from 'react'
 import {
   ArrowUpDown,
   ChefHat,
@@ -118,10 +118,16 @@ export function BrowsePage() {
 
   const query = useDebouncedValue(text.trim(), 300)
 
-  useEffect(() => {
-    if (query.length < 2) return
-    setRecent((prev) => [query, ...prev.filter((q) => q !== query)].slice(0, 5))
-  }, [query, setRecent])
+  // Saved only when the member presses Enter or leaves the box, not on every pause while typing.
+  // A longer term replaces the shorter ones it starts with, so "yo" does not stay once "yoga" is saved.
+  const remember = (term: string) => {
+    const clean = term.trim()
+    if (clean.length < 2) return
+    const lower = clean.toLowerCase()
+    setRecent((prev) =>
+      [clean, ...prev.filter((q) => q.toLowerCase() !== lower && !lower.startsWith(q.toLowerCase()))].slice(0, 5),
+    )
+  }
   const categories = useAsync(() => api.getCategories(), 'categories')
   const results = useAsync(
     (signal) => api.searchSkills({ q: query, category: category && category !== SAVED ? category : undefined }, signal),
@@ -186,6 +192,10 @@ export function BrowsePage() {
             type="search"
             value={text}
             onChange={(e) => setText(e.target.value)}
+            onBlur={(e) => remember(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') remember(e.currentTarget.value)
+            }}
             placeholder="Try “bike repair”, “French” or “yoga”"
             autoComplete="off"
             className="h-12 min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-muted-foreground [&::-webkit-search-cancel-button]:hidden"
