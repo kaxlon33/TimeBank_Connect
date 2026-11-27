@@ -5,21 +5,32 @@ interface InstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
 }
 
+// The browser can fire "beforeinstallprompt" very early, before any component is listening.
+// So we catch it here, as soon as the app loads, and keep it until it is used.
+let deferred: InstallPromptEvent | null = null
+const waiting = new Set<(e: InstallPromptEvent | null) => void>()
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeinstallprompt', (e: Event) => {
+    e.preventDefault()
+    deferred = e as InstallPromptEvent
+    waiting.forEach((notify) => notify(deferred))
+  })
+  window.addEventListener('appinstalled', () => {
+    deferred = null
+    waiting.forEach((notify) => notify(null))
+  })
+}
+
 /** Offers the browser's "install app" prompt when it is available (Chrome, Edge, Android). */
 export function useInstallPrompt() {
-  const [event, setEvent] = useState<InstallPromptEvent | null>(null)
+  const [event, setEvent] = useState<InstallPromptEvent | null>(deferred)
 
   useEffect(() => {
-    const onPrompt = (e: Event) => {
-      e.preventDefault()
-      setEvent(e as InstallPromptEvent)
-    }
-    const onInstalled = () => setEvent(null)
-    window.addEventListener('beforeinstallprompt', onPrompt)
-    window.addEventListener('appinstalled', onInstalled)
+    waiting.add(setEvent)
+    setEvent(deferred)
     return () => {
-      window.removeEventListener('beforeinstallprompt', onPrompt)
-      window.removeEventListener('appinstalled', onInstalled)
+      waiting.delete(setEvent)
     }
   }, [])
 
@@ -27,7 +38,8 @@ export function useInstallPrompt() {
     if (!event) return
     await event.prompt()
     await event.userChoice
-    setEvent(null)
+    deferred = null
+    waiting.forEach((notify) => notify(null))
   }, [event])
 
   return { canInstall: event !== null, install }
