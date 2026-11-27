@@ -139,6 +139,20 @@ export function NearbyPage() {
             <span className={cn('size-2 rounded-full', here ? 'bg-status-completed' : 'bg-stone-300')} aria-hidden="true" />
             {here ? status : 'Location needed'}
           </span>
+          <button
+            type="button"
+            onClick={useMyLocation}
+            disabled={locating}
+            className="press flex h-10 items-center gap-2 rounded-full border bg-card px-4 text-[13px] font-bold shadow-card hover:bg-secondary disabled:opacity-60"
+          >
+            {locating ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : <Crosshair className="size-4" aria-hidden="true" />}
+            Find near me
+          </button>
+          {here?.source === 'device' ? (
+            <p className="w-full text-xs font-semibold text-muted-foreground">
+              Your location is used only for this search. It is not saved.
+            </p>
+          ) : null}
         </div>
         <div role="radiogroup" aria-label="View" className="flex gap-1 self-start rounded-full bg-card p-1 shadow-card sm:self-auto">
           {(

@@ -11,6 +11,14 @@ import type { User as Member } from '@/types'
 const item =
   'flex h-11 cursor-pointer items-center gap-3 rounded-xl px-3 text-sm font-bold outline-none select-none data-[highlighted]:bg-secondary'
 
+/** True on an iPhone or iPad browser that is not already the installed app. */
+function isIphoneBrowser(): boolean {
+  if (typeof navigator === 'undefined') return false
+  const apple = /iPhone|iPad|iPod/i.test(navigator.userAgent)
+  const installed = (navigator as Navigator & { standalone?: boolean }).standalone === true
+  return apple && !installed
+}
+
 /** The member's avatar with a small menu: their pages, installing the app and logging out. */
 export function AccountMenu({ me }: { me: Member }) {
   const navigate = useNavigate()
@@ -71,6 +79,12 @@ export function AccountMenu({ me }: { me: Member }) {
               <Download className="size-4 text-wine-700" aria-hidden="true" />
               Install the app
             </DropdownMenu.Item>
+          ) : isIphoneBrowser() ? (
+            // iPhone Safari has no install button; the member adds it from the Share menu instead.
+            <p className="flex items-start gap-2.5 px-3 py-2 text-xs font-semibold text-muted-foreground">
+              <Download className="mt-0.5 size-4 shrink-0 text-wine-700" aria-hidden="true" />
+              To install: tap Share, then “Add to Home Screen”.
+            </p>
           ) : null}
           <DropdownMenu.Separator className="my-1.5 h-px bg-border" />
           <DropdownMenu.Item className={`${item} text-negative`} disabled={leaving} onSelect={() => void logOut()}>
