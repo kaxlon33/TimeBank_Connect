@@ -19,7 +19,7 @@ class UserSummaryResource extends JsonResource
         return [
             'id' => $this->id,
             'name' => $this->name,
-            'avatar_url' => $this->avatar_path ? Storage::disk('public')->url($this->avatar_path) : null,
+            'avatar_url' => $this->avatarUrl(),
             'area' => $this->relationLoaded('area') && $this->area ? new AreaResource($this->area->loadMissing('country')) : null,
             'trust_score' => (float) $this->trust_score,
             'completed_sessions' => (int) ($this->getAttribute('completed_sessions') ?? 0),

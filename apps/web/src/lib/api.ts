@@ -144,7 +144,8 @@ async function live<T>(call: () => Promise<T>, empty?: T): Promise<T> {
 /** A picture is only sent when it is new (a data URL) or being removed (null). An existing picture's URL means "keep it". */
 function pictureField(value: string | null | undefined): { set: true; value: string | null } | { set: false } {
   if (value === null) return { set: true, value: null }
-  if (typeof value === 'string' && value.startsWith('data:')) return { set: true, value }
+  // A new photo (data URL) or a chosen character (preset:...) is saved; anything else is kept as it is.
+  if (typeof value === 'string' && (value.startsWith('data:') || value.startsWith('preset:'))) return { set: true, value }
   return { set: false }
 }
 

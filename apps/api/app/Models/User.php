@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * A member or an admin.
@@ -80,6 +81,18 @@ class User extends Authenticatable
     }
 
     // ---- Relationships ---------------------------------------------------
+
+    /** A picture URL, a chosen character ("preset:pick3") or null for the default look. */
+    public function avatarUrl(): ?string
+    {
+        if (! $this->avatar_path) {
+            return null;
+        }
+
+        return str_starts_with($this->avatar_path, 'preset:')
+            ? $this->avatar_path
+            : Storage::disk('public')->url($this->avatar_path);
+    }
 
     public function area(): BelongsTo
     {

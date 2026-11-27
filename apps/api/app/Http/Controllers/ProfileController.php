@@ -13,6 +13,7 @@ use App\Services\ImageStore;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class ProfileController extends Controller
 {
@@ -48,15 +49,37 @@ class ProfileController extends Controller
 
         if (array_key_exists('avatar_url', $data)) {
             $oldAvatar = $user->avatar_path;
-            $user->avatar_path = $data['avatar_url'] ? $images->storeDataUrl($data['avatar_url'], 'avatars', 'avatar_url') : null;
+            $user->avatar_path = $this->avatarFor($data['avatar_url'], $images);
         }
 
         $user->save();
-        if ($oldAvatar && $oldAvatar !== $user->avatar_path) {
+        if ($oldAvatar && $oldAvatar !== $user->avatar_path && ! str_starts_with($oldAvatar, 'preset:')) {
             $images->delete($oldAvatar);
         }
 
         return $this->me($user);
+    }
+
+    /** The friendly characters a member can pick instead of a photo. Must match the web app's list. */
+    private const PRESETS = ['pick1', 'pick2', 'pick3', 'pick4', 'pick5', 'pick6', 'sophie', 'kyaw'];
+
+    /** Null clears the picture, "preset:<name>" keeps a chosen character, a data URL stores a photo. */
+    private function avatarFor(?string $value, ImageStore $images): ?string
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        if (str_starts_with($value, 'preset:')) {
+            $name = substr($value, 7);
+            if (! in_array($name, self::PRESETS, true)) {
+                throw ValidationException::withMessages(['avatar_url' => 'Choose one of the friendly characters.']);
+            }
+
+            return 'preset:'.$name;
+        }
+
+        return $images->storeDataUrl($value, 'avatars', 'avatar_url');
     }
 
     /** Replaces the whole weekly availability. */

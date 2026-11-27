@@ -26,7 +26,7 @@ class UserResource extends JsonResource
             'role' => $this->role->value,
             'status' => $this->status->value,
             'bio' => $this->bio ?? '',
-            'avatar_url' => $this->avatar_path ? Storage::disk('public')->url($this->avatar_path) : null,
+            'avatar_url' => $this->avatarUrl(),
             'area' => $this->area ? new AreaResource($this->area->loadMissing('country')) : null,
             'credit_balance' => (float) $this->credit_balance,
             'trust_score' => (float) $this->trust_score,

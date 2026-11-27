@@ -120,6 +120,20 @@ class ProfileWriteTest extends HelpRequestTestCase
         $this->assertSame([], Storage::disk('public')->allFiles());
     }
 
+    public function test_a_chosen_character_is_saved_and_returned_and_unknown_ones_are_refused(): void
+    {
+        $this->as($this->alice)->putJson('/api/profile', $this->profile(['avatar_url' => 'preset:pick3']))
+            ->assertOk()->assertJsonPath('data.avatar_url', 'preset:pick3');
+        $this->assertSame('preset:pick3', $this->alice->fresh()->avatar_path);
+
+        // Saving the profile again keeps the chosen character.
+        $this->as($this->alice)->putJson('/api/profile', $this->profile(['name' => 'Alice Again']))
+            ->assertOk()->assertJsonPath('data.avatar_url', 'preset:pick3');
+
+        $this->as($this->alice)->putJson('/api/profile', $this->profile(['avatar_url' => 'preset:../../etc']))
+            ->assertStatus(422)->assertJsonValidationErrors('avatar_url');
+    }
+
     public function test_availability_is_replaced_as_a_whole(): void
     {
         $this->as($this->bob)->putJson('/api/profile/availability', ['slots' => [

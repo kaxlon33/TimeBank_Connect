@@ -88,7 +88,7 @@ class AdminMemberController extends Controller
             'id' => $u->id,
             'name' => $u->name,
             'email' => $u->email,
-            'avatar_url' => $u->avatar_path ? Storage::disk('public')->url($u->avatar_path) : null,
+            'avatar_url' => $u->avatarUrl(),
             'last_active_at' => ($u->last_active_at ?? $u->created_at)?->toIso8601String(),
             'area' => $u->area ? (new AreaResource($u->area))->resolve() : null,
             'status' => $u->status->value,
