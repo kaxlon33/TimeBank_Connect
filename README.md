@@ -71,19 +71,6 @@ npm run dev
 
 Then open http://localhost:5173. Vite forwards `/api`, `/sanctum` and `/storage` to the API, so the browser only talks to one address.
 
-## Demo accounts
-
-All demo accounts use the password `password`.
-
-| Role | Email | Notes |
-|---|---|---|
-| Admin | `admin@timebank.test` | Admin console at `/admin` |
-| Member | `tom@timebank.test` | Has skills, requests, reviews and notifications |
-| Member | `daniel@timebank.test` | Offers bicycle repair |
-| Member | `aye@timebank.test` | Wrote a review that an admin later removed |
-
-Sign up with a new email to see the starter credit (3 hours) arrive.
-
 ## Running the tests
 
 The tests use `timebank_test` and refuse to run on any other database.
