@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\AdminCategoryController;
+use App\Http\Controllers\Admin\AdminGeographyController;
 use App\Http\Controllers\Admin\AdminMemberController;
 use App\Http\Controllers\Admin\AdminModerationController;
 use App\Http\Controllers\Admin\AdminSettingsController;
@@ -31,7 +32,7 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('auth')->group(function () {
     Route::get('check-email', [AuthController::class, 'checkEmail'])->middleware('throttle:30,1');
     Route::post('register', [AuthController::class, 'register'])->middleware('throttle:10,1');
-    // Per-IP cap as well as the per-email lock inside the controller.
+    // Per-IP cap as well as the per-email lock inside the controller, so trying many emails is slowed too.
     Route::post('login', [AuthController::class, 'login'])->middleware('throttle:10,1');
     Route::post('forgot-password', [PasswordResetController::class, 'sendLink'])->middleware('throttle:5,1');
     Route::post('reset-password', [PasswordResetController::class, 'reset'])->middleware('throttle:10,1');
@@ -100,6 +101,12 @@ Route::middleware(['auth:sanctum', 'active', 'track'])->group(function () {
         Route::post('moderation/{kind}/{id}/remove', [AdminModerationController::class, 'remove'])->whereIn('kind', ['skill', 'review'])->whereNumber('id');
         Route::post('moderation/{kind}/{id}/restore', [AdminModerationController::class, 'restore'])->whereIn('kind', ['skill', 'review'])->whereNumber('id');
         Route::post('reports/{id}/dismiss', [AdminModerationController::class, 'dismiss'])->whereNumber('id');
+
+        Route::get('countries', [AdminGeographyController::class, 'countries']);
+        Route::post('countries/{id}/toggle', [AdminGeographyController::class, 'toggleCountry'])->whereNumber('id');
+        Route::get('areas', [AdminGeographyController::class, 'areas']);
+        Route::put('areas/{id}', [AdminGeographyController::class, 'renameArea'])->whereNumber('id');
+        Route::delete('areas/{id}', [AdminGeographyController::class, 'destroyArea'])->whereNumber('id');
 
         Route::get('settings', [AdminSettingsController::class, 'show']);
         Route::put('settings', [AdminSettingsController::class, 'update']);

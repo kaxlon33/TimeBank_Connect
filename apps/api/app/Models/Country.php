@@ -14,13 +14,20 @@ class Country extends Model
         'region',
         'calling_code',
         'synced_at',
+        'is_active',
     ];
 
     protected function casts(): array
     {
         return [
             'synced_at' => 'datetime',
+            'is_active' => 'boolean',
         ];
+    }
+
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', true);
     }
 
     public function areas(): HasMany

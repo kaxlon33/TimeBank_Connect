@@ -15,7 +15,7 @@ class GeographyController extends Controller
 {
     public function countries(): JsonResponse
     {
-        $countries = Country::query()->orderBy('name')->get(['id', 'code', 'name', 'flag_url', 'calling_code']);
+        $countries = Country::query()->active()->orderBy('name')->get(['id', 'code', 'name', 'flag_url', 'calling_code']);
 
         return response()->json(['data' => $countries]);
     }
@@ -37,6 +37,7 @@ class GeographyController extends Controller
 
         $areas = Area::query()
             ->with('country')
+            ->whereHas('country', fn ($c) => $c->active())
             ->when($code !== '', fn ($q) => $q->whereHas('country', fn ($c) => $c->where('code', $code)))
             ->when($term !== '', fn ($q) => $q->nameStartsWith($term))
             ->orderBy('name')
@@ -44,7 +45,7 @@ class GeographyController extends Controller
             ->get();
 
         if ($areas->count() < 5 && $code !== '' && mb_strlen($term) >= 3) {
-            $country = Country::query()->where('code', $code)->first();
+            $country = Country::query()->active()->where('code', $code)->first();
 
             if ($country) {
                 foreach ($geocoder->search($term, $code, 5 - $areas->count()) as $place) {
