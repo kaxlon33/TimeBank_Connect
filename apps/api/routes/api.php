@@ -18,6 +18,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\SkillController;
+use App\Http\Controllers\SuggestedHelperController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -56,6 +57,7 @@ Route::middleware(['auth:sanctum', 'active', 'track'])->group(function () {
     Route::get('skills', [SkillController::class, 'index']);
     Route::post('skills', [SkillController::class, 'store'])->middleware('throttle:30,1');
     Route::get('skills/{skill}', [SkillController::class, 'show'])->whereNumber('skill');
+    Route::get('skills/{id}/helpers', [SuggestedHelperController::class, 'index'])->whereNumber('id');
     Route::put('skills/{id}', [SkillController::class, 'update'])->whereNumber('id');
     Route::delete('skills/{id}', [SkillController::class, 'destroy'])->whereNumber('id');
     Route::get('my/skills', [SkillController::class, 'mine']);
