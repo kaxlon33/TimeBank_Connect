@@ -13,6 +13,12 @@ interface Props {
   describedBy?: string
 }
 
+/** A small flag picture. Empty alt: the country name is already written next to it. */
+function Flag({ country }: { country: Country }) {
+  if (!country.flag_url) return null
+  return <img src={country.flag_url} alt="" width={20} height={14} loading="lazy" className="h-3.5 w-5 shrink-0 rounded-[2px] object-cover" />
+}
+
 /** A country field that opens a short, searchable list right under it. */
 export function CountrySelect({ id, value, onChange, invalid, describedBy }: Props) {
   const [countries, setCountries] = useState<Country[]>([])
@@ -60,8 +66,11 @@ export function CountrySelect({ id, value, onChange, invalid, describedBy }: Pro
           invalid && 'border-negative',
         )}
       >
-        <span className={cn('truncate', !selected && 'text-muted-foreground')}>
-          {selected ? selected.name : countries.length ? 'Choose your country' : 'Loading countries…'}
+        <span className={cn('flex min-w-0 items-center gap-2', !selected && 'text-muted-foreground')}>
+          {selected ? <Flag country={selected} /> : null}
+          <span className="truncate">
+            {selected ? selected.name : countries.length ? 'Choose your country' : 'Loading countries…'}
+          </span>
         </span>
         <ChevronDown className={cn('size-4 shrink-0 text-muted-foreground transition-transform', open && 'rotate-180')} aria-hidden="true" />
       </Popover.Trigger>
@@ -112,8 +121,11 @@ export function CountrySelect({ id, value, onChange, invalid, describedBy }: Pro
                         on && 'bg-primary-soft font-bold text-wine-700',
                       )}
                     >
-                      {c.name}
-                      {on ? <Check className="size-4" aria-hidden="true" /> : null}
+                      <span className="flex min-w-0 items-center gap-2">
+                        <Flag country={c} />
+                        <span className="truncate">{c.name}</span>
+                      </span>
+                      {on ? <Check className="size-4 shrink-0" aria-hidden="true" /> : null}
                     </button>
                   </li>
                 )
