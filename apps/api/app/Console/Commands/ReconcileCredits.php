@@ -2,16 +2,13 @@
 
 namespace App\Console\Commands;
 
-use App\Models\CreditTransaction;
-use App\Models\User;
+use App\Services\CreditService;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\DB;
 
 /**
- * Proves the credit ledger is honest (design 4.3). It checks that
- *   1. every member's cached balance equals the sum of their ledger rows, and
- *   2. every session transfer's debit and credit add up to zero (credits are moved, never created).
- * It only reports. It never edits balances or ledger rows. Exit code 1 means something drifted.
+ * Proves the credit ledger is honest (design 4.3): every balance equals the sum of its ledger rows and
+ * every session transfer nets to zero. It only reports; it never edits balances or ledger rows.
+ * Exit code 1 means something drifted.
  */
 class ReconcileCredits extends Command
 {
@@ -19,43 +16,26 @@ class ReconcileCredits extends Command
 
     protected $description = 'Check that every credit balance matches the ledger and every transfer nets to zero';
 
-    public function handle(): int
+    public function handle(CreditService $credits): int
     {
-        $sums = CreditTransaction::query()->select('user_id', DB::raw('SUM(amount) AS total'))->groupBy('user_id')->pluck('total', 'user_id');
+        $result = $credits->reconcile();
 
-        $problems = [];
-        $checked = 0;
+        $this->info("Checked {$result['members']} members.");
 
-        User::query()->orderBy('id')->each(function (User $user) use ($sums, &$problems, &$checked) {
-            $checked++;
-            $ledger = round((float) ($sums[$user->id] ?? 0), 2);
-            $cached = round((float) $user->credit_balance, 2);
-
-            if ($ledger !== $cached) {
-                $problems[] = [$user->id, $user->name, number_format($cached, 2), number_format($ledger, 2), number_format($cached - $ledger, 2)];
-            }
-        });
-
-        $unbalanced = CreditTransaction::query()
-            ->whereIn('type', ['session_debit', 'session_credit'])
-            ->select('transfer_uuid', DB::raw('SUM(amount) AS total'), DB::raw('COUNT(*) AS rows_in_transfer'))
-            ->groupBy('transfer_uuid')
-            ->havingRaw('ROUND(SUM(amount), 2) <> 0 OR COUNT(*) <> 2')
-            ->get();
-
-        $this->info("Checked {$checked} members.");
-
-        if ($problems) {
+        if ($result['balance_mismatches']) {
             $this->error('Balances that do not match the ledger:');
-            $this->table(['ID', 'Member', 'Cached balance', 'Ledger sum', 'Difference'], $problems);
+            $this->table(
+                ['ID', 'Member', 'Cached balance', 'Ledger sum', 'Difference'],
+                array_map(fn ($m) => [$m['id'], $m['name'], number_format($m['cached'], 2), number_format($m['ledger'], 2), number_format($m['cached'] - $m['ledger'], 2)], $result['balance_mismatches']),
+            );
         }
 
-        if ($unbalanced->isNotEmpty()) {
+        if ($result['unbalanced_transfers']) {
             $this->error('Transfers that do not net to zero:');
-            $this->table(['Transfer', 'Sum', 'Rows'], $unbalanced->map(fn ($t) => [$t->transfer_uuid, $t->total, $t->rows_in_transfer])->all());
+            $this->table(['Transfer', 'Sum', 'Rows'], array_map(fn ($t) => [$t['transfer'], $t['sum'], $t['rows']], $result['unbalanced_transfers']));
         }
 
-        if (! $problems && $unbalanced->isEmpty()) {
+        if ($result['ok']) {
             $this->info('All balances match the ledger and every transfer nets to zero.');
 
             return self::SUCCESS;

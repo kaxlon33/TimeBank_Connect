@@ -230,6 +230,19 @@ class AdminTest extends HelpRequestTestCase
         $this->as($this->admin)->postJson("/api/admin/moderation/skill/{$this->skill->id}/restore", ['reason' => 'Again again'])->assertStatus(409);
     }
 
+    public function test_only_a_removal_that_is_still_in_force_offers_restore(): void
+    {
+        $this->as($this->admin)->postJson("/api/admin/moderation/skill/{$this->skill->id}/remove", ['reason' => 'First removal'])->assertOk();
+        $this->as($this->admin)->getJson('/api/admin/moderation')
+            ->assertJsonPath('data.audit.0.action', 'skill.remove')->assertJsonPath('data.audit.0.restorable', true)
+            ->assertJsonPath('data.audit.0.target_type', 'skill')->assertJsonPath('data.audit.0.target_id', $this->skill->id);
+
+        $this->as($this->admin)->postJson("/api/admin/moderation/skill/{$this->skill->id}/restore", ['reason' => 'Restoring it'])->assertOk();
+        $res = $this->as($this->admin)->getJson('/api/admin/moderation');
+        $res->assertJsonPath('data.audit.0.action', 'skill.restore')->assertJsonPath('data.audit.0.restorable', false)
+            ->assertJsonPath('data.audit.1.action', 'skill.remove')->assertJsonPath('data.audit.1.restorable', false);
+    }
+
     public function test_removing_a_review_stops_it_counting_and_restoring_brings_it_back(): void
     {
         $id = $this->readyToConfirm();
@@ -309,6 +322,30 @@ class AdminTest extends HelpRequestTestCase
         $this->putJson('/api/admin/settings', $this->settings(['starter_credit' => 2.3]))->assertStatus(422)->assertJsonValidationErrors('starter_credit');
         $this->putJson('/api/admin/settings', $this->settings(['matching' => ['max_distance_km' => 0]]))->assertStatus(422);
         $this->putJson('/api/admin/settings', [])->assertStatus(422);
+    }
+
+    public function test_the_overview_reports_whether_the_ledger_is_balanced(): void
+    {
+        $id = $this->readyToConfirm(1);
+        $this->as($this->alice)->postJson("/api/help-requests/{$id}/complete")->assertOk();
+        // Alice's starting 3 credits were set by hand in this test, so give the ledger a matching row.
+        $service = app(\App\Services\CreditService::class);
+        DB::table('users')->update(['credit_balance' => 0]);
+        DB::table('credit_transactions')->delete();
+        $service->grantStarter($this->alice->refresh());
+
+        $this->as($this->admin)->getJson('/api/admin/stats')->assertJsonPath('data.ledger_balanced', true);
+
+        DB::table('users')->where('id', $this->bob->id)->update(['credit_balance' => 50]);   // drift
+        $this->as($this->admin)->getJson('/api/admin/stats')->assertJsonPath('data.ledger_balanced', false);
+    }
+
+    public function test_older_log_entries_without_a_name_still_show_what_they_were_about(): void
+    {
+        $log = new AuditLog;
+        $log->forceFill(['actor_id' => $this->admin->id, 'action' => 'member.suspend', 'target_type' => 'user', 'target_id' => $this->bob->id, 'meta' => ['reason' => 'Old entry']])->save();
+
+        $this->as($this->admin)->getJson('/api/admin/moderation')->assertJsonPath('data.audit.0.target', 'Bob Helper')->assertJsonPath('data.audit.0.reason', 'Old entry');
     }
 
     public function test_a_new_member_gets_the_starter_credit_the_admin_chose(): void

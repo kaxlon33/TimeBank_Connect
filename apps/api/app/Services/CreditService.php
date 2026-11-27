@@ -107,4 +107,43 @@ class CreditService
         $payer->forceFill(['credit_balance' => $payerBalance])->save();
         $payee->forceFill(['credit_balance' => $payeeBalance])->save();
     }
+
+    /**
+     * Checks that the ledger is honest. It only reads, never edits.
+     *   1. every member's cached balance equals the sum of their ledger rows, and
+     *   2. every session transfer is exactly one debit and one credit that add up to zero.
+     *
+     * @return array{members: int, balance_mismatches: list<array{id:int, name:string, cached:float, ledger:float}>, unbalanced_transfers: list<array{transfer:string, sum:float, rows:int}>, ok: bool}
+     */
+    public function reconcile(): array
+    {
+        $sums = CreditTransaction::query()->select('user_id', DB::raw('SUM(amount) AS total'))->groupBy('user_id')->pluck('total', 'user_id');
+
+        $mismatches = [];
+        $members = 0;
+        User::query()->orderBy('id')->each(function (User $user) use ($sums, &$mismatches, &$members) {
+            $members++;
+            $ledger = round((float) ($sums[$user->id] ?? 0), 2);
+            $cached = round((float) $user->credit_balance, 2);
+            if ($ledger !== $cached) {
+                $mismatches[] = ['id' => $user->id, 'name' => $user->name, 'cached' => $cached, 'ledger' => $ledger];
+            }
+        });
+
+        $unbalanced = CreditTransaction::query()
+            ->whereIn('type', [TransactionType::SessionDebit->value, TransactionType::SessionCredit->value])
+            ->select('transfer_uuid', DB::raw('SUM(amount) AS total'), DB::raw('COUNT(*) AS rows_in_transfer'))
+            ->groupBy('transfer_uuid')
+            ->havingRaw('ROUND(SUM(amount), 2) <> 0 OR COUNT(*) <> 2')
+            ->get()
+            ->map(fn ($t) => ['transfer' => $t->transfer_uuid, 'sum' => round((float) $t->total, 2), 'rows' => (int) $t->rows_in_transfer])
+            ->all();
+
+        return [
+            'members' => $members,
+            'balance_mismatches' => $mismatches,
+            'unbalanced_transfers' => $unbalanced,
+            'ok' => ! $mismatches && ! $unbalanced,
+        ];
+    }
 }

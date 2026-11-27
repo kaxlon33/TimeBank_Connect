@@ -51,9 +51,12 @@ return [
         'min_interval_ms' => (int) env('NOMINATIM_MIN_INTERVAL_MS', 1000),
     ],
 
-    // REST Countries: country names, flags and calling codes for the sign-up form.
+    // REST Countries (v5): country names, flags and calling codes for the sign-up form.
+    // v5 needs a free API key from restcountries.com. Without one, countries:sync does nothing.
     'restcountries' => [
-        'base_url' => env('RESTCOUNTRIES_URL', 'https://restcountries.com/v3.1'),
+        'base_url' => env('RESTCOUNTRIES_URL', 'https://api.restcountries.com/countries/v5'),
+        'api_key' => env('RESTCOUNTRIES_API_KEY'),
+        'page_size' => 100,
         'timeout' => 15,
     ],
 

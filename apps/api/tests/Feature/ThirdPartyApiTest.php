@@ -130,39 +130,78 @@ class ThirdPartyApiTest extends TestCase
         ])->assertCreated()->assertJsonPath('data.area.latitude', 51.545);
     }
 
-    // ---- REST Countries --------------------------------------------------------
+    // ---- REST Countries (v5) -----------------------------------------------------
+
+    private function v5Row(string $code, string $name, string $region, array $calling, ?string $png = 'x'): array
+    {
+        return [
+            'names' => ['common' => $name],
+            'codes' => ['alpha_2' => $code],
+            'region' => $region,
+            'flag' => ['url_png' => $png === 'x' ? "https://flags.restcountries.com/v5/w640/".strtolower($code).'.png' : $png, 'url_svg' => "https://flags.restcountries.com/v5/svg/".strtolower($code).'.svg'],
+            'calling_codes' => $calling,
+        ];
+    }
+
+    private function v5Page(array $objects, bool $more = false): array
+    {
+        return ['data' => ['objects' => $objects, 'meta' => ['total' => count($objects), 'count' => count($objects), 'limit' => 100, 'offset' => 0, 'more' => $more]]];
+    }
 
     private function restCountries(): array
     {
         return [
-            ['cca2' => 'MM', 'name' => ['common' => 'Myanmar'], 'flags' => ['png' => 'https://flagcdn.com/w320/mm.png', 'svg' => 'https://flagcdn.com/mm.svg'], 'region' => 'Asia', 'idd' => ['root' => '+9', 'suffixes' => ['5']]],
-            ['cca2' => 'US', 'name' => ['common' => 'United States'], 'flags' => ['png' => 'https://flagcdn.com/w320/us.png'], 'region' => 'Americas', 'idd' => ['root' => '+1', 'suffixes' => ['201', '202']]],
-            ['cca2' => 'XX', 'name' => ['common' => ''], 'flags' => [], 'region' => 'Nowhere'],   // unusable: no name
-            ['cca2' => 'TOOLONG', 'name' => ['common' => 'Bad code']],                              // unusable: bad code
+            $this->v5Row('MM', 'Myanmar', 'Asia', ['95']),
+            $this->v5Row('US', 'United States', 'Americas', ['1']),
+            ['names' => ['common' => ''], 'codes' => ['alpha_2' => 'XX']],            // unusable: no name
+            ['names' => ['common' => 'Bad code'], 'codes' => ['alpha_2' => 'TOOLONG']], // unusable: bad code
         ];
+    }
+
+    private function withKey(): void
+    {
+        config(['services.restcountries.api_key' => 'test-key']);
     }
 
     public function test_the_country_sync_adds_countries_with_flags_and_calling_codes(): void
     {
-        Http::fake(['restcountries.com/*' => Http::response($this->restCountries())]);
+        $this->withKey();
+        Http::fake(['api.restcountries.com/*' => Http::response($this->v5Page($this->restCountries()))]);
 
         $this->artisan('countries:sync')->expectsOutputToContain('2 added, 0 updated')->assertSuccessful();
 
         $mm = Country::query()->where('code', 'MM')->firstOrFail();
         $this->assertSame('Myanmar', $mm->name);
-        $this->assertSame('https://flagcdn.com/w320/mm.png', $mm->flag_url);
+        $this->assertSame('https://flags.restcountries.com/v5/w640/mm.png', $mm->flag_url);
         $this->assertSame('Asia', $mm->region);
         $this->assertSame('+95', $mm->calling_code);
         $this->assertNotNull($mm->synced_at);
-        $this->assertSame('+1', Country::query()->where('code', 'US')->value('calling_code')); // many area codes: just the root
+        $this->assertSame('+1', Country::query()->where('code', 'US')->value('calling_code'));
         $this->assertSame(2, Country::query()->count());
 
-        Http::assertSent(fn ($r) => str_contains($r->url(), 'fields=cca2'));
+        Http::assertSent(fn ($r) => $r->hasHeader('Authorization', 'Bearer test-key')
+            && str_starts_with($r->url(), 'https://api.restcountries.com/countries/v5')
+            && str_contains($r->url(), 'response_fields='));
+    }
+
+    public function test_the_country_sync_follows_pages(): void
+    {
+        $this->withKey();
+        Http::fake(['api.restcountries.com/*' => Http::sequence()
+            ->push($this->v5Page([$this->v5Row('MM', 'Myanmar', 'Asia', ['95'])], more: true))
+            ->push($this->v5Page([$this->v5Row('SG', 'Singapore', 'Asia', ['65'])], more: false))]);
+
+        $this->artisan('countries:sync')->expectsOutputToContain('2 added')->assertSuccessful();
+
+        $this->assertSame(['MM', 'SG'], Country::query()->orderBy('code')->pluck('code')->all());
+        Http::assertSentCount(2);
+        Http::assertSent(fn ($r) => str_contains($r->url(), 'offset=100'));
     }
 
     public function test_running_the_country_sync_again_updates_instead_of_duplicating(): void
     {
-        Http::fake(['restcountries.com/*' => Http::response($this->restCountries())]);
+        $this->withKey();
+        Http::fake(['api.restcountries.com/*' => Http::response($this->v5Page($this->restCountries()))]);
         $this->artisan('countries:sync')->assertSuccessful();
 
         Country::query()->where('code', 'MM')->update(['name' => 'Old name']);
@@ -172,25 +211,56 @@ class ThirdPartyApiTest extends TestCase
         $this->assertSame('Myanmar', Country::query()->where('code', 'MM')->value('name'));
     }
 
-    public function test_a_failed_country_sync_leaves_the_existing_countries_alone(): void
+    public function test_without_an_api_key_the_sync_explains_and_changes_nothing(): void
     {
         $this->seed(CountrySeeder::class);
         $before = Country::query()->count();
+        config(['services.restcountries.api_key' => '']);
 
-        Http::fake(['restcountries.com/*' => Http::response('error', 500)]);
-        $this->artisan('countries:sync')->assertFailed();
+        $this->artisan('countries:sync')->expectsOutputToContain('No REST Countries API key')->assertFailed();
 
-        Http::fake(['restcountries.com/*' => Http::response([])]);
-        $this->artisan('countries:sync')->assertFailed();
+        Http::assertNothingSent();
+        $this->assertSame($before, Country::query()->count());
+    }
+
+    public function test_a_failed_country_sync_leaves_the_existing_countries_alone(): void
+    {
+        $this->withKey();
+        $this->seed(CountrySeeder::class);
+        $before = Country::query()->count();
+
+        Http::fake(['api.restcountries.com/*' => Http::sequence()
+            ->push('error', 500)
+            ->push(['data' => null, 'errors' => [['message' => 'Unauthorized']]], 401)
+            ->push(['data' => null, 'errors' => [['message' => 'Frozen']]], 403)
+            ->push($this->v5Page([]))]);
+
+        $this->artisan('countries:sync')->expectsOutputToContain('status 500')->assertFailed();
+        $this->artisan('countries:sync')->expectsOutputToContain('API key was not accepted')->assertFailed();
+        $this->artisan('countries:sync')->expectsOutputToContain('over its monthly limit')->assertFailed();
+        $this->artisan('countries:sync')->expectsOutputToContain('no usable countries')->assertFailed();
+
+        $this->assertSame($before, Country::query()->count());
+    }
+
+    public function test_an_unreachable_countries_api_leaves_the_existing_countries_alone(): void
+    {
+        $this->withKey();
+        $this->seed(CountrySeeder::class);
+        $before = Country::query()->count();
+
+        Http::fake(['api.restcountries.com/*' => fn () => throw new \Illuminate\Http\Client\ConnectionException('timeout')]);
+        $this->artisan('countries:sync')->expectsOutputToContain('Could not reach REST Countries')->assertFailed();
 
         $this->assertSame($before, Country::query()->count());
     }
 
     public function test_the_countries_endpoint_includes_flags(): void
     {
-        Http::fake(['restcountries.com/*' => Http::response($this->restCountries())]);
+        $this->withKey();
+        Http::fake(['api.restcountries.com/*' => Http::response($this->v5Page($this->restCountries()))]);
         $this->artisan('countries:sync')->assertSuccessful();
 
-        $this->getJson('/api/countries')->assertOk()->assertJsonFragment(['code' => 'MM', 'flag_url' => 'https://flagcdn.com/w320/mm.png']);
+        $this->getJson('/api/countries')->assertOk()->assertJsonFragment(['code' => 'MM', 'flag_url' => 'https://flags.restcountries.com/v5/w640/mm.png']);
     }
 }

@@ -9,6 +9,8 @@ use App\Models\AuditLog;
 use App\Models\Report;
 use App\Models\Review;
 use App\Models\Skill;
+use App\Models\SkillCategory;
+use App\Models\User;
 use App\Services\ModerationService;
 use App\Services\UserStatsService;
 use Illuminate\Http\JsonResponse;
@@ -31,15 +33,20 @@ class AdminModerationController extends Controller
             ->withCount(['reports as open_reports_count' => fn ($q) => $q->where('status', 'open')])
             ->latest('id')->limit(200)->get();
 
-        $audit = AuditLog::query()->with('actor:id,name')->latest('id')->limit(50)->get()
-            ->map(fn (AuditLog $a) => [
-                'id' => $a->id,
-                'action' => $a->action,
-                'actor' => $a->actor?->name ?? 'Admin',
-                'target' => $a->meta['label'] ?? $a->target_type,
-                'reason' => $a->meta['reason'] ?? '',
-                'created_at' => $a->created_at?->toIso8601String(),
-            ])->values();
+        $logs = AuditLog::query()->with('actor:id,name')->latest('id')->limit(50)->get();
+        $names = $this->targetNames($logs);
+        $restorable = $this->restorable($logs);
+        $audit = $logs->map(fn (AuditLog $a) => [
+            'id' => $a->id,
+            'action' => $a->action,
+            'actor' => $a->actor?->name ?? 'Admin',
+            'target' => $a->meta['label'] ?? $names["{$a->target_type}:{$a->target_id}"] ?? $a->target_type,
+            'reason' => $a->meta['reason'] ?? '',
+            'created_at' => $a->created_at?->toIso8601String(),
+            'target_type' => $a->target_type,
+            'target_id' => $a->target_id,
+            'restorable' => in_array($a->id, $restorable, true),
+        ])->values();
 
         return response()->json(['data' => [
             'reported' => $this->queue(),
@@ -75,6 +82,66 @@ class AdminModerationController extends Controller
         $this->moderation->dismissReport($request->user(), $reportId);
 
         return response()->json(['message' => 'Report dismissed']);
+    }
+
+    /**
+     * Readable names for log lines that were written without one (older entries): looked up in a
+     * few queries, one per kind of thing.
+     *
+     * @param  \Illuminate\Support\Collection<int, AuditLog>  $logs
+     * @return array<string,string> "type:id" => name
+     */
+    private function targetNames($logs): array
+    {
+        $missing = $logs->filter(fn (AuditLog $a) => ! isset($a->meta['label']) && $a->target_id);
+        $ids = fn (string $type) => $missing->where('target_type', $type)->pluck('target_id')->unique();
+
+        $names = [];
+        foreach (User::query()->whereIn('id', $ids('user'))->pluck('name', 'id') as $id => $name) {
+            $names["user:{$id}"] = $name;
+        }
+        foreach (Skill::query()->whereIn('id', $ids('skill'))->pluck('title', 'id') as $id => $title) {
+            $names["skill:{$id}"] = $title;
+        }
+        foreach (Review::query()->with('reviewee:id,name')->whereIn('id', $ids('review'))->get() as $review) {
+            $names["review:{$review->id}"] = 'Review of '.$review->reviewee->name;
+        }
+        foreach (SkillCategory::query()->whereIn('id', $ids('category'))->pluck('name', 'id') as $id => $name) {
+            $names["category:{$id}"] = $name;
+        }
+
+        return $names;
+    }
+
+    /**
+     * Log entries that offer a Restore button: the newest entry about a skill or review, when it was a removal
+     * and the item is still removed.
+     *
+     * @param  \Illuminate\Support\Collection<int, AuditLog>  $logs  newest first
+     * @return list<int> audit log ids
+     */
+    private function restorable($logs): array
+    {
+        $removalLogs = $logs->filter(fn (AuditLog $a) => in_array($a->action, ['skill.remove', 'review.remove'], true) && $a->target_id);
+        $stillRemoved = [
+            'skill' => Skill::query()->whereIn('id', $removalLogs->where('target_type', 'skill')->pluck('target_id'))->where('status', 'removed')->pluck('id')->all(),
+            'review' => Review::query()->whereIn('id', $removalLogs->where('target_type', 'review')->pluck('target_id'))->where('status', 'removed')->pluck('id')->all(),
+        ];
+
+        $seen = [];
+        $ids = [];
+        foreach ($logs as $log) {
+            $key = "{$log->target_type}:{$log->target_id}";
+            if (isset($seen[$key]) || ! in_array($log->target_type, ['skill', 'review'], true)) {
+                continue;
+            }
+            $seen[$key] = true;
+            if (in_array($log->action, ['skill.remove', 'review.remove'], true) && in_array($log->target_id, $stillRemoved[$log->target_type], true)) {
+                $ids[] = $log->id;
+            }
+        }
+
+        return $ids;
     }
 
     private function reason(Request $request): string

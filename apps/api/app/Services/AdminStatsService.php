@@ -12,10 +12,13 @@ use App\Models\Report;
 use App\Models\Skill;
 use App\Models\User;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\DB;
 
 /** The numbers on the admin overview, worked out in a handful of aggregate queries. */
 class AdminStatsService
 {
+    public function __construct(private readonly CreditService $credits) {}
+
     /** @return array<string,mixed> */
     public function overview(): array
     {
@@ -31,13 +34,14 @@ class AdminStatsService
             'popular_skills' => $this->popularSkills(),
             'sessions_by_week' => $this->sessionsByWeek(),
             'open_reports' => $this->openReports(),
+            'ledger_balanced' => $this->credits->reconcile()['ok'],
         ];
     }
 
     /** Items (not individual reports) waiting for a decision. */
     public function openReports(): int
     {
-        return Report::query()->open()->distinct()->count(\DB::raw("CONCAT(target_type, ':', target_id)"));
+        return Report::query()->open()->distinct()->count(DB::raw("CONCAT(target_type, ':', target_id)"));
     }
 
     /** @return list<array{title:string, category:string, requests:int}> */
