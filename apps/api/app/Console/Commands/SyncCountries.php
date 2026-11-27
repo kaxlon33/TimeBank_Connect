@@ -40,11 +40,11 @@ class SyncCountries extends Command
 
         for ($page = 0; $page < self::MAX_PAGES; $page++) {
             try {
-                $response = Http::baseUrl((string) config('services.restcountries.base_url'))
-                    ->withToken($key)
+                // Pass the whole URL: a base URL plus '' would add a trailing slash, which the API rejects.
+                $response = Http::withToken($key)
                     ->acceptJson()
                     ->timeout((int) config('services.restcountries.timeout'))
-                    ->get('/', [
+                    ->get((string) config('services.restcountries.base_url'), [
                         'limit' => $limit,
                         'offset' => $page * $limit,
                         'response_fields' => 'names.common,codes.alpha_2,region,flag.url_png,flag.url_svg,calling_codes',
