@@ -1,18 +1,17 @@
 /**
- * The app's data layer. Login, sign-up, password reset, skills browse and detail, nearby helpers,
- * notifications, the profile and the reference lists (countries, areas, categories) call the Laravel API.
- * Everything else (requests, credits, skill and profile changes, admin) still returns demo data after a
- * short delay, with the same signatures, and moves to the API one group at a time.
+ * The app's data layer: every function here calls the Laravel REST API (see ./http for cookies and CSRF)
+ * and returns the typed result the pages use.
  *
  * Review helper: add ?state=loading | empty | error to any page URL to force that state.
  */
 import type {
   AdminMember,
-  AvailabilitySlot,
+  AdminModeration,
   AdminStats,
   AppNotification,
   AppSettings,
   Area,
+  AvailabilitySlot,
   Country,
   CreditTransaction,
   HelpRequest,
@@ -21,7 +20,6 @@ import type {
   ProfileInput,
   PublicProfile,
   RegisterInput,
-  ReportedItem,
   Review,
   Skill,
   SkillCategory,
@@ -30,12 +28,7 @@ import type {
   User,
   UserStatus,
 } from '@/types'
-import { areaSuggestions, countries } from '@/mocks/geo'
-import { CURRENT_USER_ID, users } from '@/mocks/users'
-import { categories, skills, slugify } from '@/mocks/skills'
-import { helpRequests } from '@/mocks/requests'
-import { adminStats, appSettings, auditLog, notifications, reportedItems, reviews, transactions } from '@/mocks/activity'
-import { ApiError, get, post, setUnauthorizedHandler } from './http'
+import { ApiError, get, http, post, setUnauthorizedHandler } from './http'
 import { readStored, removeStored, writeStored } from './storage'
 
 export { ApiError }
@@ -43,23 +36,7 @@ export { ApiError }
 /** The API's single-resource and list responses are wrapped as `{ data: ... }`. */
 type Wrapped<T> = { data: T }
 
-const db = {
-  users: structuredClone(users),
-  skills: structuredClone(skills),
-  categories: structuredClone(categories),
-  requests: structuredClone(helpRequests),
-  transactions: structuredClone(transactions),
-  notifications: structuredClone(notifications),
-  reviews: structuredClone(reviews),
-  reported: structuredClone(reportedItems),
-  audit: structuredClone(auditLog),
-  settings: structuredClone(appSettings),
-}
-
-let nextId = 1000
-const newId = () => ++nextId
-
-/* ---------- session store (header balance + unread count) ---------- */
+/* ---------- session store (header balance, unread count, open reports) ---------- */
 
 export interface SessionSnapshot {
   me: User
@@ -70,44 +47,61 @@ export interface SessionSnapshot {
   openReports: number
 }
 
+/** Stands in for "the member" while nobody is signed in, so pages never have to handle a missing user. */
+const GUEST: User = {
+  id: 0,
+  name: '',
+  email: '',
+  role: 'member',
+  status: 'active',
+  bio: '',
+  avatar_url: null,
+  area: null,
+  credit_balance: 0,
+  trust_score: 0,
+  completed_sessions: 0,
+  rating_avg: null,
+  rating_count: 0,
+  badges: [],
+  availability: [],
+  created_at: '',
+  suspended_reason: null,
+}
+
 const listeners = new Set<() => void>()
 // The signed-in member is remembered in the browser so a refresh keeps them in; the API confirms it on start-up.
 const storedSession = readStored<{ email: string; user?: User } | null>('session', null)
-// The real member returned by the API. Pages that are not on the API yet still read the demo data (below),
-// which mirrors the seeded database, so a demo account sees the same people on both sides.
 let realMe: User | null = storedSession?.user ?? null
-let currentUserId: number =
-  (storedSession && db.users.find((u) => u.email.toLowerCase() === storedSession.email.toLowerCase())?.id) || CURRENT_USER_ID
-const me = (): User => {
-  if (realMe) return realMe
-  const user = db.users.find((u) => u.id === currentUserId)
-  if (!user) throw new Error('Signed-in mock user missing')
-  return user
-}
 let signedIn = storedSession !== null
 let unreadCount = 0
-let snapshot: SessionSnapshot = { me: me(), unread: unreadCount, signedIn, openReports: db.reported.length }
+let openReportsCount = 0
+let snapshot: SessionSnapshot = { me: realMe ?? GUEST, unread: unreadCount, signedIn, openReports: openReportsCount }
 
 function setSignedIn(value: boolean, user?: User) {
   signedIn = value
   if (value && user) {
     realMe = user
-    currentUserId = db.users.find((u) => u.email.toLowerCase() === user.email.toLowerCase())?.id ?? CURRENT_USER_ID
     writeStored('session', { email: user.email, user })
   } else if (!value) {
     realMe = null
     unreadCount = 0
+    openReportsCount = 0
     removeStored('session')
   }
 }
 
 function emit() {
-  snapshot = { me: { ...me() }, unread: unreadCount, signedIn, openReports: db.reported.length }
+  snapshot = { me: { ...(realMe ?? GUEST) }, unread: unreadCount, signedIn, openReports: openReportsCount }
   listeners.forEach((l) => l())
 }
 
 function setUnread(list: AppNotification[]) {
   unreadCount = list.filter((n) => !n.read_at).length
+  emit()
+}
+
+function setMember(user: User) {
+  setSignedIn(true, user)
   emit()
 }
 
@@ -135,32 +129,7 @@ function forcedState(): ForcedState {
   return s === 'loading' || s === 'empty' || s === 'error' ? s : null
 }
 
-function wait(ms: number, signal?: AbortSignal) {
-  return new Promise<void>((resolve, reject) => {
-    const id = window.setTimeout(resolve, ms)
-    signal?.addEventListener('abort', () => {
-      window.clearTimeout(id)
-      reject(new DOMException('Aborted', 'AbortError'))
-    })
-  })
-}
-
-interface RespondOptions<T> {
-  empty?: T
-  delay?: number
-  signal?: AbortSignal
-}
-
-async function respond<T>(make: () => T, { empty, delay = 450, signal }: RespondOptions<T> = {}): Promise<T> {
-  const forced = forcedState()
-  if (forced === 'loading') return new Promise<T>(() => undefined)
-  await wait(delay + Math.random() * 200, signal)
-  if (forced === 'error') throw new ApiError('We could not reach the server. Check your connection and try again.', 503)
-  if (forced === 'empty' && empty !== undefined) return empty
-  return structuredClone(make())
-}
-
-/** A real API call that still honours the ?state=loading | empty | error review helper. */
+/** An API call that still honours the ?state=loading | empty | error review helper. */
 async function live<T>(call: () => Promise<T>, empty?: T): Promise<T> {
   const forced = forcedState()
   if (forced === 'loading') return new Promise<T>(() => undefined)
@@ -169,32 +138,28 @@ async function live<T>(call: () => Promise<T>, empty?: T): Promise<T> {
   return call()
 }
 
-async function mutate<T>(make: () => T, delay = 500): Promise<T> {
-  await wait(delay)
-  const result = make()
-  emit()
-  return structuredClone(result)
+/** A picture is only sent when it is new (a data URL) or being removed (null). An existing picture's URL means "keep it". */
+function pictureField(value: string | null | undefined): { set: true; value: string | null } | { set: false } {
+  if (value === null) return { set: true, value: null }
+  if (typeof value === 'string' && value.startsWith('data:')) return { set: true, value }
+  return { set: false }
 }
 
-/* ---------- auth ---------- */
-
-/** Demo data: when each member last used the app. Two members have been quiet for a while. */
-const LAST_ACTIVE_DAYS_AGO: Record<number, number> = { 2: 1, 3: 0, 4: 3, 5: 0, 6: 47, 7: 5, 8: 62, 9: 12, 10: 2 }
-const lastActive = (id: number) => new Date(Date.now() - (LAST_ACTIVE_DAYS_AGO[id] ?? 4) * 24 * 60 * 60 * 1000).toISOString()
-
-/** Re-reads the signed-in member (their credit balance changes when a session is confirmed). */
+/** Re-reads the signed-in member (for example their credit balance changes when a session is confirmed). */
 async function refreshMember(): Promise<void> {
   try {
     const { data: user } = await get<Wrapped<User>>('/auth/me')
-    setSignedIn(true, user)
-    emit()
+    setMember(user)
     void api.getNotifications().catch(() => undefined)
+    if (user.role === 'admin') void api.refreshOpenReports()
   } catch {
     /* The next page load will refresh it. */
   }
 }
 
 export const api = {
+  /* ---------- auth ---------- */
+
   async login(email: string, password: string): Promise<User> {
     let user: User
     try {
@@ -204,9 +169,9 @@ export const api = {
       if (err instanceof ApiError && err.errors.email) throw new ApiError(err.errors.email, err.status)
       throw err
     }
-    setSignedIn(true, user)
-    emit()
+    setMember(user)
     void api.getNotifications().catch(() => undefined) // fills the unread badge
+    if (user.role === 'admin') void api.refreshOpenReports()
     return user
   },
 
@@ -223,15 +188,8 @@ export const api = {
   /** Asks the API who is signed in. Keeps a remembered member signed in, or signs them out if the session ended. */
   async restoreSession(): Promise<void> {
     if (!signedIn) return
-    try {
-      const { data: user } = await get<Wrapped<User>>('/auth/me')
-      setSignedIn(true, user)
-      emit()
-      void api.getNotifications().catch(() => undefined)
-    } catch (err) {
-      // Only a 401 (handled globally) ends the session. A network error keeps the remembered member.
-      if (err instanceof ApiError && err.status === 401) return
-    }
+    // Only a 401 (handled globally) ends the session. A network error keeps the remembered member.
+    await refreshMember()
   },
 
   /** Always succeeds, so nobody can use this to find out which emails have an account. */
@@ -255,8 +213,7 @@ export const api = {
       country_code: input.country_code,
       area_name: input.area_name.trim(),
     })
-    setSignedIn(true, user)
-    emit()
+    setMember(user)
     return user
   },
 
@@ -287,52 +244,42 @@ export const api = {
     return live(async () => (await get<Wrapped<{ skill: Skill; helper: PublicProfile; reviews: Review[] }>>(`/skills/${id}`)).data)
   },
 
-  // Still on demo data: creating, editing and deleting skills is not on the API yet, and the list must match those writes.
-  getMySkills(): Promise<Skill[]> {
-    return respond(() => db.skills.filter((s) => s.user.id === currentUserId && s.status !== 'removed'), { empty: [] })
+  async getMySkills(): Promise<Skill[]> {
+    return live(async () => (await get<Wrapped<Skill[]>>('/my/skills')).data, [])
   },
 
-  createSkill(input: SkillInput): Promise<Skill> {
-    return mutate(() => {
-      const category = db.categories.find((c) => c.id === input.category_id)
-      if (!category) throw new ApiError('Choose a category', 422, { category_id: 'Choose a category.' })
-      const owner = db.skills.find((s) => s.user.id === CURRENT_USER_ID)?.user
-      const skill: Skill = {
-        id: newId(),
-        title: input.title,
-        description: input.description,
-        category: { id: category.id, name: category.name, slug: category.slug },
-        status: 'active',
-        image_url: input.image_url ?? null,
-        user: owner ?? { ...me(), avatar_url: null },
-        created_at: new Date().toISOString(),
-        report_count: 0,
-      }
-      db.skills.unshift(skill)
-      return skill
+  async createSkill(input: SkillInput): Promise<Skill> {
+    const picture = pictureField(input.image_url)
+    const { data } = await post<Wrapped<Skill>>('/skills', {
+      title: input.title,
+      category_id: input.category_id,
+      description: input.description,
+      ...(picture.set ? { image_url: picture.value } : {}),
     })
+    return data
   },
 
-  updateSkill(id: ID, input: SkillInput & { status?: Skill['status'] }): Promise<Skill> {
-    return mutate(() => {
-      const skill = db.skills.find((s) => s.id === id)
-      const category = db.categories.find((c) => c.id === input.category_id)
-      if (!skill || !category) throw new ApiError('Skill not found', 404)
-      Object.assign(skill, {
+  async updateSkill(id: ID, input: SkillInput & { status?: Skill['status'] }): Promise<Skill> {
+    const picture = pictureField(input.image_url)
+    const { data } = await http<Wrapped<Skill>>('PUT', `/skills/${id}`, {
+      body: {
         title: input.title,
+        category_id: input.category_id,
         description: input.description,
-        category: { id: category.id, name: category.name, slug: category.slug },
-        status: input.status ?? skill.status,
-        ...(input.image_url !== undefined ? { image_url: input.image_url } : {}),
-      })
-      return skill
+        ...(input.status && input.status !== 'removed' ? { status: input.status } : {}),
+        ...(picture.set ? { image_url: picture.value } : {}),
+      },
     })
+    return data
   },
 
-  deleteSkill(id: ID): Promise<void> {
-    return mutate(() => {
-      db.skills = db.skills.filter((s) => s.id !== id)
-    }, 350)
+  async deleteSkill(id: ID): Promise<void> {
+    await http('DELETE', `/skills/${id}`)
+  },
+
+  /** A member reports a skill post or a review to the moderators. */
+  async reportContent(kind: 'skill' | 'review', targetId: ID, reason: string): Promise<void> {
+    await post('/reports', { kind, target_id: targetId, reason })
   },
 
   /* ---------- help requests ---------- */
@@ -403,52 +350,33 @@ export const api = {
 
   /* ---------- profile ---------- */
 
-  // Saving profile changes is not on the API yet: edits show for this visit and are not stored.
   async getMe(): Promise<{ user: User; reviews: Review[] }> {
     return live(async () => {
       const { data } = await get<Wrapped<{ user: User; reviews: Review[] }>>('/profile')
-      const edited = realMe
-      // Keep what the member just changed on screen (edits are session-only until the profile endpoints exist).
-      const user = edited
-        ? {
-            ...data.user,
-            name: edited.name,
-            bio: edited.bio,
-            area: edited.area,
-            avatar_url: edited.avatar_url,
-            availability: edited.availability,
-          }
-        : data.user
-      return { user, reviews: data.reviews }
+      return data
     })
   },
 
-  updateProfile(input: ProfileInput, avatarUrl: string | null): Promise<User> {
-    return mutate(() => {
-      const user = me()
-      const area =
-        areaSuggestions.find((a) => a.name.toLowerCase() === input.area_name.trim().toLowerCase()) ??
-        (input.area_name.trim()
-          ? {
-              id: newId(),
-              name: input.area_name.trim(),
-              country_code: input.country_code,
-              country_name: countries.find((c) => c.code === input.country_code)?.name ?? input.country_code,
-              latitude: 0,
-              longitude: 0,
-            }
-          : user.area)
-      Object.assign(user, { name: input.name, bio: input.bio, area, avatar_url: avatarUrl })
-      return user
-    }, 700)
+  /** Saves name, bio and area. `avatarUrl` is the picture to keep (its URL), a new one (a data URL) or null to remove it. */
+  async updateProfile(input: ProfileInput, avatarUrl: string | null): Promise<User> {
+    const picture = pictureField(avatarUrl)
+    const { data } = await http<Wrapped<User>>('PUT', '/profile', {
+      body: {
+        name: input.name,
+        bio: input.bio,
+        country_code: input.country_code,
+        area_name: input.area_name,
+        ...(picture.set ? { avatar_url: picture.value } : {}),
+      },
+    })
+    setMember(data)
+    return data
   },
 
-  updateAvailability(slots: AvailabilitySlot[]): Promise<User> {
-    return mutate(() => {
-      const user = me()
-      user.availability = slots.map((s) => ({ ...s }))
-      return user
-    }, 600)
+  async updateAvailability(slots: AvailabilitySlot[]): Promise<User> {
+    const { data } = await http<Wrapped<User>>('PUT', '/profile/availability', { body: { slots } })
+    setMember(data)
+    return data
   },
 
   /* ---------- nearby ---------- */
@@ -467,149 +395,91 @@ export const api = {
 
   /* ---------- admin ---------- */
 
-  getAdminStats(): Promise<AdminStats> {
-    return respond(() => adminStats, { delay: 550 })
-  },
-
-  getAdminMembers(q: string, signal?: AbortSignal): Promise<AdminMember[]> {
-    const term = q.trim().toLowerCase()
-    return respond(
-      () =>
-        db.users
-          .filter((u) => u.role === 'member')
-          .filter(
-            (u) =>
-              !term ||
-              u.name.toLowerCase().includes(term) ||
-              u.email.includes(term) ||
-              (u.area?.name.toLowerCase().includes(term) ?? false),
-          )
-          .map((u) => ({
-            id: u.id,
-            name: u.name,
-            email: u.email,
-            avatar_url: u.avatar_url,
-            last_active_at: lastActive(u.id),
-            area: u.area,
-            status: u.status,
-            credit_balance: u.credit_balance,
-            trust_score: u.trust_score,
-            completed_sessions: u.completed_sessions,
-            joined_at: u.created_at,
-            suspended_reason: u.suspended_reason,
-          })),
-      { empty: [], signal, delay: 350 },
-    )
-  },
-
-  setMemberStatus(id: ID, status: UserStatus, reason: string | null): Promise<void> {
-    return mutate(() => {
-      const user = db.users.find((u) => u.id === id)
-      if (!user) throw new ApiError('Member not found', 404)
-      user.status = status
-      user.suspended_reason = status === 'suspended' ? reason : null
-      db.audit.unshift({
-        id: newId(),
-        action: status === 'suspended' ? 'member.suspend' : 'member.reactivate',
-        actor: 'Admin User',
-        target: user.name,
-        reason: reason ?? '',
-        created_at: new Date().toISOString(),
-      })
-    }, 450)
-  },
-
-  getAdminCategories(): Promise<SkillCategory[]> {
-    return respond(() => db.categories, { empty: [], delay: 300 })
-  },
-
-  saveCategory(id: ID | null, name: string): Promise<SkillCategory> {
-    return mutate(() => {
-      if (db.categories.some((c) => c.name.toLowerCase() === name.trim().toLowerCase() && c.id !== id)) {
-        throw new ApiError('A category with this name already exists.', 422, { name: 'Already exists.' })
-      }
-      if (id) {
-        const c = db.categories.find((x) => x.id === id)
-        if (!c) throw new ApiError('Category not found', 404)
-        Object.assign(c, { name: name.trim(), slug: slugify(name) })
-        return c
-      }
-      const c: SkillCategory = { id: newId(), name: name.trim(), slug: slugify(name), is_active: true, skills_count: 0 }
-      db.categories.push(c)
-      return c
-    }, 400)
-  },
-
-  toggleCategory(id: ID): Promise<SkillCategory> {
-    return mutate(() => {
-      const c = db.categories.find((x) => x.id === id)
-      if (!c) throw new ApiError('Category not found', 404)
-      c.is_active = !c.is_active
-      return c
-    }, 300)
-  },
-
-  getModeration(): Promise<{ reported: ReportedItem[]; skills: Skill[]; reviews: Review[]; audit: typeof auditLog }> {
-    return respond(() => ({ reported: db.reported, skills: db.skills, reviews: db.reviews, audit: db.audit }), {
-      empty: { reported: [], skills: [], reviews: [], audit: [] },
+  async getAdminStats(): Promise<AdminStats> {
+    return live(async () => {
+      const { data } = await get<Wrapped<AdminStats>>('/admin/stats')
+      openReportsCount = data.open_reports
+      emit()
+      return data
     })
   },
 
-  moderate(kind: 'skill' | 'review', id: ID, action: 'remove' | 'restore', reason: string): Promise<void> {
-    return mutate(() => {
-      if (kind === 'skill') {
-        const s = db.skills.find((x) => x.id === id)
-        if (s) s.status = action === 'remove' ? 'removed' : 'active'
-      } else {
-        const r = db.reviews.find((x) => x.id === id)
-        if (r) r.status = action === 'remove' ? 'removed' : 'visible'
-      }
-      const target =
-        kind === 'skill'
-          ? (db.skills.find((x) => x.id === id)?.title ?? 'Skill')
-          : `Review by ${db.reviews.find((x) => x.id === id)?.reviewer.name ?? 'member'}`
-      db.audit.unshift({
-        id: newId(),
-        action: `${kind}.${action}`,
-        actor: 'Admin User',
-        target,
-        reason,
-        created_at: new Date().toISOString(),
-      })
-      // A removed item no longer needs a decision.
-      if (action === 'remove') db.reported = db.reported.filter((r) => !(r.kind === kind && r.target_id === id))
-    }, 450)
+  /** Updates the red number on the admin sidebar. */
+  async refreshOpenReports(): Promise<void> {
+    try {
+      openReportsCount = (await get<{ open: number }>('/admin/reports/count')).open
+      emit()
+    } catch {
+      /* The badge is a convenience. */
+    }
+  },
+
+  async getAdminMembers(q: string, signal?: AbortSignal): Promise<AdminMember[]> {
+    return live(async () => (await get<Wrapped<AdminMember[]>>('/admin/members', { query: { q: q.trim() }, signal })).data, [])
+  },
+
+  async setMemberStatus(id: ID, status: UserStatus, reason: string | null): Promise<void> {
+    await post(`/admin/members/${id}/status`, { status, reason })
+  },
+
+  async getAdminCategories(): Promise<SkillCategory[]> {
+    return live(async () => (await get<Wrapped<SkillCategory[]>>('/admin/categories')).data, [])
+  },
+
+  async saveCategory(id: ID | null, name: string): Promise<SkillCategory> {
+    const { data } = id
+      ? await http<Wrapped<SkillCategory>>('PUT', `/admin/categories/${id}`, { body: { name } })
+      : await post<Wrapped<SkillCategory>>('/admin/categories', { name })
+    return data
+  },
+
+  async toggleCategory(id: ID): Promise<SkillCategory> {
+    return (await post<Wrapped<SkillCategory>>(`/admin/categories/${id}/toggle`)).data
+  },
+
+  async getModeration(): Promise<AdminModeration> {
+    return live(
+      async () => {
+        const { data } = await get<Wrapped<AdminModeration>>('/admin/moderation')
+        openReportsCount = data.reported.length
+        emit()
+        return data
+      },
+      { reported: [], skills: [], reviews: [], audit: [] },
+    )
+  },
+
+  async moderate(kind: 'skill' | 'review', id: ID, action: 'remove' | 'restore', reason: string): Promise<void> {
+    await post(`/admin/moderation/${kind}/${id}/${action}`, { reason })
+    await api.refreshOpenReports()
   },
 
   /** Keeps the content and closes the report. */
-  dismissReport(id: ID): Promise<void> {
-    return mutate(() => {
-      const report = db.reported.find((r) => r.id === id)
-      if (!report) throw new ApiError('Report not found', 404)
-      db.reported = db.reported.filter((r) => r.id !== id)
-      db.audit.unshift({
-        id: newId(),
-        action: 'report.dismiss',
-        actor: 'Admin User',
-        target: report.title,
-        reason: 'Reviewed and kept: no rule broken.',
-        created_at: new Date().toISOString(),
-      })
-    }, 400)
+  async dismissReport(id: ID): Promise<void> {
+    await post(`/admin/reports/${id}/dismiss`)
+    await api.refreshOpenReports()
   },
 
-  getSettings(): Promise<AppSettings> {
-    return respond(() => db.settings, { delay: 300 })
+  async getSettings(): Promise<AppSettings> {
+    return live(async () => (await get<Wrapped<AppSettings>>('/admin/settings')).data)
   },
 
-  saveSettings(settings: AppSettings): Promise<AppSettings> {
-    return mutate(() => {
-      const w = settings.matching.weights
-      if (w.skill + w.location + w.availability + w.reputation !== 100) {
-        throw new ApiError('Matching weights must add up to 100.', 422, { weights: 'Must total 100.' })
-      }
-      db.settings = structuredClone(settings)
-      return db.settings
-    }, 550)
+  async saveSettings(settings: AppSettings): Promise<AppSettings> {
+    return (await http<Wrapped<AppSettings>>('PUT', '/admin/settings', { body: settings })).data
   },
+}
+
+/* ---------- keeping the bell fresh ---------- */
+
+/** While someone is signed in and the tab is open, ask for new notifications (and open reports, for admins) every 15 seconds. */
+function refreshBadges() {
+  if (!signedIn || document.hidden) return
+  void api.getNotifications().catch(() => undefined)
+  if (realMe?.role === 'admin') void api.refreshOpenReports()
+}
+
+if (typeof window !== 'undefined') {
+  window.setInterval(refreshBadges, 15_000)
+  // Coming back to the tab refreshes straight away instead of waiting for the next tick.
+  document.addEventListener('visibilitychange', refreshBadges)
 }

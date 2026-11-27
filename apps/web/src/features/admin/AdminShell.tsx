@@ -22,7 +22,7 @@ function SidebarBody({ onNavigate }: { onNavigate?: () => void }) {
   const { me, openReports: open } = useSyncExternalStore(sessionStore.subscribe, sessionStore.getSnapshot)
   const stats = useAsync(() => api.getAdminStats(), 'admin-stats')
   const [leaving, setLeaving] = useState(false)
-  const balanced = stats.status === 'success' ? stats.data.credits_in_circulation === stats.data.starter_credits_issued : true
+  const balanced = stats.status === 'success' ? stats.data.ledger_balanced : true
 
   async function logOut() {
     setLeaving(true)

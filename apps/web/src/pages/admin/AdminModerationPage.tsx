@@ -1,5 +1,5 @@
 import { useState, type CSSProperties, type FormEvent } from 'react'
-import { Check, Flag, Loader2, Pencil, Plus, ShieldCheck, Trash2, X } from 'lucide-react'
+import { Check, Flag, Loader2, Pencil, Plus, ShieldCheck, Trash2, Undo2, X } from 'lucide-react'
 import { Dialog } from 'radix-ui'
 import { toast } from 'sonner'
 import { AdminHeader } from '@/features/admin/AdminShell'
@@ -8,7 +8,7 @@ import { api, ApiError } from '@/lib/api'
 import { relativeTime } from '@/lib/format'
 import { staggerDelay, useAsync } from '@/lib/hooks'
 import { cn } from '@/lib/utils'
-import type { ReportedItem, SkillCategory } from '@/types'
+import type { AuditEntry, ReportedItem, SkillCategory } from '@/types'
 
 function CategoriesCard() {
   const cats = useAsync(() => api.getAdminCategories(), 'admin-categories')
@@ -330,9 +330,24 @@ export function AdminModerationPage() {
   const [tab, setTab] = useState<'open' | 'log'>('open')
   const [removing, setRemoving] = useState<ReportedItem | null>(null)
   const [keepingId, setKeepingId] = useState<ReportedItem['id'] | null>(null)
+  const [restoringId, setRestoringId] = useState<AuditEntry['id'] | null>(null)
 
   const reported = moderation.status === 'success' ? moderation.data.reported : []
   const audit = moderation.status === 'success' ? moderation.data.audit : []
+
+  async function restore(entry: AuditEntry) {
+    if (!entry.target_id || (entry.target_type !== 'skill' && entry.target_type !== 'review')) return
+    setRestoringId(entry.id)
+    try {
+      await api.moderate(entry.target_type, entry.target_id, 'restore', 'Restored by an admin.')
+      toast.success(entry.target_type === 'skill' ? 'Skill restored' : 'Review restored')
+      moderation.reload()
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'We could not restore that. Please try again.')
+    } finally {
+      setRestoringId(null)
+    }
+  }
 
   async function keep(item: ReportedItem) {
     setKeepingId(item.id)
@@ -492,6 +507,21 @@ export function AdminModerationPage() {
                     </p>
                     <p className="mt-0.5 text-[13px] leading-relaxed text-muted-foreground">{a.reason}</p>
                   </div>
+                  {a.restorable && a.target_id ? (
+                    <button
+                      type="button"
+                      disabled={restoringId === a.id}
+                      onClick={() => void restore(a)}
+                      className="press flex h-9 shrink-0 items-center gap-1.5 rounded-xl border px-3 text-xs font-bold hover:bg-secondary disabled:opacity-60"
+                    >
+                      {restoringId === a.id ? (
+                        <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
+                      ) : (
+                        <Undo2 className="size-3.5" aria-hidden="true" />
+                      )}
+                      Restore
+                    </button>
+                  ) : null}
                   <span className="shrink-0 text-xs font-semibold text-muted-foreground">{relativeTime(a.created_at)}</span>
                 </li>
               )

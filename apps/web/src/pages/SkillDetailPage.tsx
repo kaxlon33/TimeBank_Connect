@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { ChevronRight, Clock, Heart, SearchX } from 'lucide-react'
 import { AvailabilityStrip } from '@/features/skills/AvailabilityStrip'
 import { HelperCard } from '@/features/skills/HelperCard'
+import { ReportButton } from '@/features/skills/ReportDialog'
 import { RequestPanel } from '@/features/skills/RequestPanel'
 import { ReviewsList } from '@/features/skills/ReviewsList'
 import { api, sessionStore } from '@/lib/api'
@@ -80,13 +81,7 @@ export function SkillDetailPage() {
             aria-label={skill.title}
             className="tile-in relative isolate flex min-h-[300px] flex-col justify-end overflow-hidden rounded-[32px] bg-wine-800 text-white shadow-raised sm:min-h-[380px] lg:min-h-[440px]"
           >
-            <img
-              src={skillImage(skill)}
-              alt=""
-              width={960}
-              height={720}
-              className="absolute inset-0 -z-20 size-full object-cover"
-            />
+            <img src={skillImage(skill)} alt="" width={960} height={720} className="absolute inset-0 -z-20 size-full object-cover" />
             <div className="absolute inset-0 -z-10 bg-gradient-to-t from-wine-900/92 via-wine-900/35 to-transparent" />
 
             <div className="absolute top-5 right-5 left-5 flex items-start justify-between gap-3 sm:top-6 sm:right-6 sm:left-6">
@@ -128,7 +123,12 @@ export function SkillDetailPage() {
                 </Link>
               </section>
             ) : (
-              <RequestPanel skill={skill} slots={slots} balance={me.credit_balance} />
+              <>
+                <RequestPanel skill={skill} slots={slots} balance={me.credit_balance} />
+                <div className="flex justify-center">
+                  <ReportButton kind="skill" targetId={skill.id} subject={skill.title} label="Report this skill" />
+                </div>
+              </>
             )}
           </aside>
 

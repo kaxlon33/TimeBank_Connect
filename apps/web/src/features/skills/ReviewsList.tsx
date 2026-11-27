@@ -1,10 +1,14 @@
+import { useSyncExternalStore } from 'react'
 import { Avatar } from '@/components/Avatar'
 import { StarRating } from '@/components/StarRating'
+import { sessionStore } from '@/lib/api'
 import { relativeTime } from '@/lib/format'
+import { ReportButton } from './ReportDialog'
 import type { PublicProfile, Review } from '@/types'
 
 /** A big rating on the left, a calm list of reviews on the right. */
 export function ReviewsList({ helper, reviews }: { helper: PublicProfile; reviews: Review[] }) {
+  const { me } = useSyncExternalStore(sessionStore.subscribe, sessionStore.getSnapshot)
   const first = helper.name.split(' ')[0]
 
   if (!reviews.length) {
@@ -32,7 +36,18 @@ export function ReviewsList({ helper, reviews }: { helper: PublicProfile; review
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
                 <p className="text-[15px] font-bold">{r.reviewer.name}</p>
-                <p className="text-xs font-medium text-muted-foreground">{relativeTime(r.created_at)}</p>
+                <p className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
+                  {relativeTime(r.created_at)}
+                  {r.reviewer.id !== me.id ? (
+                    <ReportButton
+                      kind="review"
+                      targetId={r.id}
+                      subject={`Review by ${r.reviewer.name}`}
+                      label="Report this review"
+                      iconOnly
+                    />
+                  ) : null}
+                </p>
               </div>
               <StarRating value={r.rating} className="mt-1.5 [&_svg]:size-3.5" />
               <p className="mt-2 text-[15px] leading-relaxed text-foreground/85">{r.comment}</p>

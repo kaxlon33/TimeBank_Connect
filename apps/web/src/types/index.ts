@@ -27,6 +27,8 @@ export interface Country {
   id: ID
   code: string
   name: string
+  /** A small flag picture, filled in by the REST Countries sync. */
+  flag_url?: string | null
 }
 
 export interface Area {
@@ -177,6 +179,31 @@ export interface AdminStats {
   starter_credits_issued: number
   popular_skills: { title: string; category: string; requests: number }[]
   sessions_by_week: { week: string; sessions: number }[]
+  /** Reported items waiting for an admin decision. */
+  open_reports: number
+  /** True when every balance matches the credit ledger and every transfer nets to zero. */
+  ledger_balanced: boolean
+}
+
+/** One line of the admin log: who did what to which thing, and why. */
+export interface AuditEntry {
+  id: ID
+  action: string
+  actor: string
+  target: string
+  reason: string
+  created_at: string
+  target_type?: string
+  target_id?: ID | null
+  /** True when this was a removal and the skill or review is still removed, so it can be put back. */
+  restorable?: boolean
+}
+
+export interface AdminModeration {
+  reported: ReportedItem[]
+  skills: Skill[]
+  reviews: Review[]
+  audit: AuditEntry[]
 }
 
 export interface AdminMember {
