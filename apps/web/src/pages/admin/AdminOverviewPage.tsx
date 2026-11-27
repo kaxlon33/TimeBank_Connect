@@ -23,6 +23,10 @@ function Figure({ icon: Icon, label, value, detail }: { icon: LucideIcon; label:
   )
 }
 
+/** Brand colours, used in turn for bars and rankings. */
+const palette = ['bg-wine-600', 'bg-status-completed', 'bg-star', 'bg-wine-800']
+const paletteText = ['text-wine-600', 'text-status-completed', 'text-star', 'text-wine-800']
+
 function WeekChart({ data }: { data: AdminStats['sessions_by_week'] }) {
   const max = Math.max(...data.map((d) => d.sessions), 1)
   return (
@@ -36,11 +40,11 @@ function WeekChart({ data }: { data: AdminStats['sessions_by_week'] }) {
           const last = i === data.length - 1
           return (
             <div key={d.week} className="flex h-full min-w-0 flex-1 flex-col justify-end gap-2">
-              <span className={cn('numeral text-center text-xl', last ? 'text-wine-700' : 'text-muted-foreground')}>{d.sessions}</span>
+              <span className={cn('numeral text-center text-xl', last ? 'text-brass' : paletteText[i % paletteText.length])}>{d.sessions}</span>
               <div
                 className={cn(
                   'w-full rounded-t-2xl rounded-b-md transition-[height] duration-700 ease-out',
-                  last ? 'bg-wine-700' : 'bg-wine-700/25',
+                  last ? 'bg-brass' : palette[i % palette.length],
                 )}
                 style={{ height: `${Math.max(8, (d.sessions / max) * 100)}%` }}
               />
@@ -152,11 +156,14 @@ export function AdminOverviewPage() {
                   const top = stats.data.popular_skills[0]?.requests || 1
                   return (
                     <li key={s.title} className="flex items-center gap-3.5">
-                      <span className="numeral w-6 text-center text-2xl text-wine-700">{i + 1}</span>
+                      <span className={cn('numeral w-6 text-center text-2xl', paletteText[i % paletteText.length])}>{i + 1}</span>
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-bold">{s.title}</p>
-                        <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-muted">
-                          <div className="h-full rounded-full bg-wine-700" style={{ width: `${(s.requests / top) * 100}%` }} />
+                        <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-muted">
+                          <div
+                            className={cn('h-full rounded-full', palette[i % palette.length])}
+                            style={{ width: `${(s.requests / top) * 100}%` }}
+                          />
                         </div>
                       </div>
                       <span className="w-6 text-right text-sm font-bold">{s.requests}</span>

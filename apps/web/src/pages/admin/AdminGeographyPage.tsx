@@ -60,19 +60,23 @@ function CountriesSection({ countries }: { countries: CountriesState }) {
           </button>
         </div>
       ) : (
-        <ul className="max-h-[420px] divide-y overflow-y-auto">
+        <ul className="grid max-h-[420px] gap-px overflow-y-auto bg-border sm:grid-cols-2 lg:grid-cols-3">
           {list.map((c, i) => (
-            <li key={c.id} style={{ '--delay': staggerDelay(i) } as CSSProperties} className="tile-in flex items-center gap-3 px-5 py-3.5 sm:px-6">
+            <li
+              key={c.id}
+              style={{ '--delay': staggerDelay(i) } as CSSProperties}
+              className="tile-in flex items-center gap-2.5 bg-card px-4 py-2.5"
+            >
               {c.flag_url ? (
-                <img src={c.flag_url} alt="" width={28} height={20} loading="lazy" className="h-5 w-7 shrink-0 rounded-[3px] object-cover" />
+                <img src={c.flag_url} alt="" width={24} height={16} loading="lazy" className="h-4 w-6 shrink-0 rounded-[3px] object-cover" />
               ) : (
-                <span className="grid h-5 w-7 shrink-0 place-items-center rounded-[3px] bg-secondary text-muted-foreground">
-                  <Globe2 className="size-3.5" aria-hidden="true" />
+                <span className="grid h-4 w-6 shrink-0 place-items-center rounded-[3px] bg-secondary text-muted-foreground">
+                  <Globe2 className="size-3" aria-hidden="true" />
                 </span>
               )}
               <div className="min-w-0 flex-1">
-                <p className={cn('truncate text-[15px] font-bold', !c.is_active && 'text-muted-foreground line-through')}>{c.name}</p>
-                <p className="text-xs text-muted-foreground">
+                <p className={cn('truncate text-sm font-bold', !c.is_active && 'text-muted-foreground line-through')}>{c.name}</p>
+                <p className="text-[11px] text-muted-foreground">
                   {c.code} · {c.areas_count} {c.areas_count === 1 ? 'area' : 'areas'}
                 </p>
               </div>
@@ -81,19 +85,22 @@ function CountriesSection({ countries }: { countries: CountriesState }) {
                 onClick={() => toggle(c)}
                 disabled={busy === c.id}
                 aria-pressed={c.is_active}
+                aria-label={`${c.is_active ? 'Hide' : 'Show'} ${c.name} on sign-up`}
                 className={cn(
-                  'press inline-flex h-10 shrink-0 items-center gap-2 rounded-xl border px-3.5 text-[13px] font-bold disabled:opacity-60',
-                  c.is_active ? 'text-status-completed hover:bg-status-completed-bg' : 'text-muted-foreground hover:bg-secondary',
+                  'press inline-flex h-7 shrink-0 items-center gap-1.5 rounded-full px-2.5 text-xs font-bold transition-colors disabled:opacity-60',
+                  c.is_active
+                    ? 'bg-status-completed-bg text-status-completed hover:brightness-95'
+                    : 'bg-secondary text-muted-foreground hover:brightness-95',
                 )}
               >
                 {busy === c.id ? (
-                  <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                  <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
                 ) : c.is_active ? (
-                  <Eye className="size-4" aria-hidden="true" />
+                  <Eye className="size-3.5" aria-hidden="true" />
                 ) : (
-                  <EyeOff className="size-4" aria-hidden="true" />
+                  <EyeOff className="size-3.5" aria-hidden="true" />
                 )}
-                {c.is_active ? 'Shown on sign-up' : 'Hidden'}
+                {c.is_active ? 'On' : 'Off'}
               </button>
             </li>
           ))}
