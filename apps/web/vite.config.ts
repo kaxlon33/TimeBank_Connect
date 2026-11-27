@@ -11,6 +11,8 @@ export default defineConfig({
     },
   },
   server: {
+    // Listen on IPv4 so http://127.0.0.1:5173 works on every Windows setup.
+    host: '127.0.0.1',
     // The browser talks to one origin; Vite forwards API calls to Laravel (`php artisan serve`).
     proxy: {
       '/api': { target: 'http://127.0.0.1:8000', changeOrigin: false },
