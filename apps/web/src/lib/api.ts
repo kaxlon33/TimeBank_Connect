@@ -503,10 +503,20 @@ export const api = {
 /* ---------- keeping the bell fresh ---------- */
 
 /** While someone is signed in and the tab is open, ask for new notifications (and open reports, for admins) every 15 seconds. */
-function refreshBadges() {
-  if (!signedIn || document.hidden) return
-  void api.getNotifications().catch(() => undefined)
-  if (realMe?.role === 'admin') void api.refreshOpenReports()
+let badgesBusy = false
+
+/** Skips a tick while the last one is still waiting, so slow responses never pile up. */
+async function refreshBadges() {
+  if (!signedIn || document.hidden || badgesBusy) return
+  badgesBusy = true
+  try {
+    await Promise.all([
+      api.getNotifications().catch(() => undefined),
+      realMe?.role === 'admin' ? api.refreshOpenReports().catch(() => undefined) : undefined,
+    ])
+  } finally {
+    badgesBusy = false
+  }
 }
 
 if (typeof window !== 'undefined') {
