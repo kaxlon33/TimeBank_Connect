@@ -41,7 +41,9 @@ export function NearbyPage() {
   const [locationError, setLocationError] = useState<string | null>(null)
 
   // Start from the member's saved area. The device location is only used when they ask for it.
-  const home: Position | null = me.area ? { lat: me.area.latitude, lng: me.area.longitude, source: 'home' } : null
+  // An area typed by hand may have no map position yet; then there is no home point to start from.
+  const homeHasPosition = me.area?.latitude != null && me.area?.longitude != null
+  const home: Position | null = me.area && homeHasPosition ? { lat: me.area.latitude, lng: me.area.longitude, source: 'home' } : null
   const here = position ?? home
 
   const fetched = useAsync(() => (here ? api.getNearbyHelpers(here, radius) : Promise.resolve([])), `${here?.lat}|${here?.lng}|${radius}`)

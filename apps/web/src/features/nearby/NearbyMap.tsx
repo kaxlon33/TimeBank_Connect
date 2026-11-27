@@ -102,7 +102,12 @@ export const NearbyMap = forwardRef<NearbyMapHandle, Props>(function NearbyMap(
 
   useEffect(() => {
     if (!box.current) return
-    const m = L.map(box.current, { zoomControl: false, scrollWheelZoom: false, attributionControl: true })
+    // A fresh element for each mount, so Leaflet never finds a map left over from an earlier one.
+    const el = document.createElement('div')
+    el.style.height = '100%'
+    el.style.width = '100%'
+    box.current.appendChild(el)
+    const m = L.map(el, { zoomControl: false, scrollWheelZoom: false, attributionControl: true })
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
       attribution: '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a> contributors',
@@ -115,6 +120,7 @@ export const NearbyMap = forwardRef<NearbyMapHandle, Props>(function NearbyMap(
     return () => {
       m.off('move zoom resize', follow)
       m.remove()
+      el.remove()
       map.current = null
       layer.current = null
     }
