@@ -114,23 +114,6 @@ This checks that every balance equals the sum of its ledger rows and that every 
 - **Admin:** overview numbers, suspend and reactivate members, manage skill categories, moderate reported skills and reviews (with restore), change starter credit and matching settings. Every admin action is written to an audit log.
 - **Phone friendly:** responsive layout with a bottom navigation bar, camera or file photo upload, and an installable PWA shell.
 
-## Demo script (about 10 minutes)
-
-Use two browsers: one for Tom (member) and one for Ada (admin). Start both servers first (see Running the app).
-
-1. **Sign up.** Open the register page, pick a country (flags show) and type an area such as "Camden". Note that the form asks for a town or district, not a street.
-2. **Browse.** Sign in as `tom@timebank.test`. Type "yoga" in search, clear it, and show that "yoga" appears under Recent.
-3. **Skill and helpers.** Open a skill. Show "Other helpers you could ask" with match scores and reasons.
-4. **Ask for help.** Write a request message, refresh the page, and show that the message is still there. Send the request.
-5. **Accept.** Sign in as the helper of the skill you requested (for example `daniel@timebank.test` for bicycle repair), open Requests, accept, and mark it done.
-6. **Confirm.** Back as Tom, confirm the session. Show the credits moved in the header and in Credits.
-7. **Review.** Leave a review for the helper. Show the rating on their profile.
-8. **Profile.** Choose a friendly character avatar, reload, and show it is still selected.
-9. **Nearby.** Open Nearby. Explain that location is used when allowed, and the saved area is used otherwise.
-10. **Admin.** Sign in as `admin@timebank.test`. Show the overview charts, then Places (switch a country off and on, rename an area), then Moderation and the audit log.
-
-Expected: the admin ledger check says "Ledger balanced".
-
 ## Notes
 
 - `apps/api/.env` holds secrets and is git-ignored. Never commit it.
