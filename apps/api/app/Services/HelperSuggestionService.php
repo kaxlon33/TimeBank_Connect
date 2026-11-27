@@ -56,7 +56,11 @@ final class HelperSuggestionService
             $km = Geo::distanceKm((float) $here->latitude, (float) $here->longitude, (float) $theirs->latitude, (float) $theirs->longitude);
             $distancePoints = (int) round(40 * max(0, 1 - $km / self::NEAR_KM));
             $points += $distancePoints;
-            $reasons[] = $km < 0.2 ? 'In your area' : sprintf('%.1f km away', $km);
+            $reasons[] = match (true) {
+                $km < 0.2 => 'In your area',
+                $km < 10 => sprintf('%.1f km away', $km),
+                default => number_format(round($km)).' km away',
+            };
         }
 
         // Trust.

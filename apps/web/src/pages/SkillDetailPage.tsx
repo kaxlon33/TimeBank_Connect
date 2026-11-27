@@ -6,6 +6,7 @@ import { HelperCard } from '@/features/skills/HelperCard'
 import { ReportButton } from '@/features/skills/ReportDialog'
 import { RequestPanel } from '@/features/skills/RequestPanel'
 import { ReviewsList } from '@/features/skills/ReviewsList'
+import { SuggestedHelpers } from '@/features/skills/SuggestedHelpers'
 import { api, sessionStore } from '@/lib/api'
 import { distanceKm } from '@/lib/format'
 import { useAsync } from '@/lib/hooks'
@@ -159,6 +160,12 @@ export function SkillDetailPage() {
               <ReviewsList helper={helper} reviews={reviews} />
             </div>
           </section>
+
+          {mine ? null : (
+            <section className="tile-in rounded-[28px] border bg-card shadow-card" style={{ '--delay': '120ms' } as React.CSSProperties}>
+              <SuggestedHelpers skillId={skill.id} />
+            </section>
+          )}
         </div>
       )}
     </div>
