@@ -40,6 +40,12 @@ export function ProfileForm({ user, showHours = true }: { user: User; showHours?
     setErrors((e) => ({ ...e, [k]: undefined }))
   }
 
+  // A new country means the old area no longer applies, so the member picks one in the new country.
+  const setCountry = (code: string) => {
+    setForm((f) => ({ ...f, country: code, area: '' }))
+    setErrors((e) => ({ ...e, country: undefined, area: undefined }))
+  }
+
   function validate(): Errors {
     const e: Errors = {}
     if (form.name.trim().length < 2) e.name = 'Please enter your name.'
@@ -114,7 +120,7 @@ export function ProfileForm({ user, showHours = true }: { user: User; showHours?
             <CountrySelect
               id="profile-country"
               value={form.country}
-              onChange={set('country')}
+              onChange={setCountry}
               invalid={!!errors.country}
               describedBy={describedBy('profile-country', errors.country)}
             />

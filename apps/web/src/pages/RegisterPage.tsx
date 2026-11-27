@@ -27,6 +27,12 @@ export function RegisterPage() {
     if (errors[key as keyof Errors]) setErrors((e) => ({ ...e, [key]: undefined }))
   }
 
+  // A new country means the old area no longer applies, so the member picks one in the new country.
+  const setCountry = (code: string) => {
+    setForm((f) => ({ ...f, country: code, area: '' }))
+    setErrors((e) => ({ ...e, country: undefined, area: undefined }))
+  }
+
   const validate = (key: keyof Errors, f = form): string | undefined => {
     switch (key) {
       case 'name':
@@ -168,7 +174,7 @@ export function RegisterPage() {
           <CountrySelect
             id="country"
             value={form.country}
-            onChange={set('country')}
+            onChange={setCountry}
             invalid={!!errors.country}
             describedBy={describedBy('country', errors.country)}
           />
