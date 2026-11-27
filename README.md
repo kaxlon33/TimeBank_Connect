@@ -32,7 +32,7 @@ You need PHP 8.2+, Composer, Node.js 20+ and XAMPP with MySQL.
    ```sql
    CREATE DATABASE timebank CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
    CREATE DATABASE timebank_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-   CREATE USER 'timebank'@'localhost' IDENTIFIED BY 'choose-a-password';
+   CREATE USER 'timebank'@'localhost' IDENTIFIED BY 'your-password';
    GRANT ALL PRIVILEGES ON timebank.* TO 'timebank'@'localhost';
    GRANT ALL PRIVILEGES ON timebank_test.* TO 'timebank'@'localhost';
    ```
