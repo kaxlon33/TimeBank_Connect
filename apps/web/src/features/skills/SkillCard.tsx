@@ -20,7 +20,12 @@ interface Props {
 }
 
 function YoursChip() {
-  return <span className="rounded-full bg-white px-3 py-1.5 text-xs font-bold text-wine-800 shadow-card">Yours</span>
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-3.5 py-1.5 text-xs font-extrabold tracking-wide text-white shadow-raised ring-2 ring-white/80">
+      <span className="size-1.5 rounded-full bg-white" aria-hidden="true" />
+      Yours
+    </span>
+  )
 }
 
 function Rating({ skill, className }: { skill: Skill; className?: string }) {
