@@ -80,7 +80,7 @@ All demo accounts use the password `password`.
 | Admin | `admin@timebank.test` | Admin console at `/admin` |
 | Member | `tom@timebank.test` | Has skills, requests, reviews and notifications |
 | Member | `daniel@timebank.test` | Offers bicycle repair |
-| Member | `aye@timebank.test` | Has a removed review history |
+| Member | `aye@timebank.test` | Wrote a review that an admin later removed |
 
 Sign up with a new email to see the starter credit (3 hours) arrive.
 
