@@ -2,6 +2,7 @@ import type { Skill } from '@/types'
 
 /** Pictures live in /public/skills. Later, a new picture is generated when a member posts a skill. */
 const BY_TITLE: [RegExp, string][] = [
+  [/chinese|mandarin|cantonese/i, 'chinese'],
   [/bicycle|bike/i, 'bicycle-repair'],
   [/smartphone|phone|video call/i, 'smartphone'],
   [/french/i, 'french'],
