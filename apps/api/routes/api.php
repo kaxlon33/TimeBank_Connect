@@ -31,7 +31,8 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('auth')->group(function () {
     Route::get('check-email', [AuthController::class, 'checkEmail'])->middleware('throttle:30,1');
     Route::post('register', [AuthController::class, 'register'])->middleware('throttle:10,1');
-    Route::post('login', [AuthController::class, 'login']);
+    // Per-IP cap as well as the per-email lock inside the controller.
+    Route::post('login', [AuthController::class, 'login'])->middleware('throttle:10,1');
     Route::post('forgot-password', [PasswordResetController::class, 'sendLink'])->middleware('throttle:5,1');
     Route::post('reset-password', [PasswordResetController::class, 'reset'])->middleware('throttle:10,1');
 

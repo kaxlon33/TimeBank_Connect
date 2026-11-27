@@ -9,9 +9,21 @@ use Illuminate\Validation\Rule;
 /** Create and edit a skill post. Owner, status and moderation fields can never come from here. */
 class SkillRequest extends FormRequest
 {
+    /**
+     * Ownership is checked before the fields are validated, so someone editing another
+     * member's skill gets "not allowed" rather than a list of form errors.
+     */
     public function authorize(): bool
     {
-        return true;
+        $id = $this->route('id');
+        if ($id === null) {
+            return true; // creating a skill: any signed-in member may offer one
+        }
+
+        $skill = \App\Models\Skill::query()->find((int) $id);
+
+        // A missing skill is answered by the controller (404), not here.
+        return $skill === null || $skill->user_id === $this->user()?->id;
     }
 
     public function rules(): array
