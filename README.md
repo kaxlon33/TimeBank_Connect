@@ -69,8 +69,6 @@ cd apps/web
 npm run dev
 ```
 
-Then open http://localhost:5173. Vite forwards `/api`, `/sanctum` and `/storage` to the API, so the browser only talks to one address.
-
 ## Running the tests
 
 The tests use `timebank_test` and refuse to run on any other database.
