@@ -2,7 +2,8 @@ import { useId, useRef, useState } from 'react'
 import { removeStored, usePersistentState } from '@/lib/storage'
 import { Check, ImagePlus, Loader2, RotateCcw, X } from 'lucide-react'
 import { Dialog } from 'radix-ui'
-import { resizeToCover } from '@/lib/image'
+import { checkSkillPicture } from '@/lib/image'
+import { PictureFramer } from './PictureFramer'
 import { skillImage } from '@/lib/skillImages'
 import { cn } from '@/lib/utils'
 import type { ID, Skill, SkillCategory, SkillInput } from '@/types'
@@ -63,22 +64,21 @@ function SkillForm({
   const [failed, setFailed] = useState<string | null>(null)
   const [image, setImage] = useState<string | null>(skill?.image_url ?? null)
   const [imageError, setImageError] = useState<string | null>(null)
-  const [reading, setReading] = useState(false)
+  // A newly chosen picture waits here while the member picks which part to show.
+  const [framing, setFraming] = useState<File | null>(null)
   const fileInput = useRef<HTMLInputElement>(null)
 
   const category = categories.find((c) => c.id === categoryId)
   const picture = skillImage({ title, category: category ? { slug: category.slug } : undefined, image_url: image })
 
-  async function onFile(file: File | undefined) {
+  function onFile(file: File | undefined) {
     if (!file) return
-    setReading(true)
     setImageError(null)
     try {
-      setImage(await resizeToCover(file))
+      checkSkillPicture(file)
+      setFraming(file)
     } catch (err) {
       setImageError(err instanceof Error ? err.message : 'We could not use that picture.')
-    } finally {
-      setReading(false)
     }
   }
 
@@ -135,10 +135,10 @@ function SkillForm({
           <button
             type="button"
             onClick={() => fileInput.current?.click()}
-            disabled={reading}
+            disabled={framing !== null}
             className="press flex h-10 items-center gap-2 rounded-full border border-white/25 bg-wine-900/55 px-4 text-sm font-bold backdrop-blur-md hover:bg-wine-900/75 disabled:opacity-60"
           >
-            {reading ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : <ImagePlus className="size-4" aria-hidden="true" />}
+            <ImagePlus className="size-4" aria-hidden="true" />
             {image ? 'Change picture' : 'Upload picture'}
           </button>
           {image ? (
@@ -180,6 +180,16 @@ function SkillForm({
       </div>
 
       <div className="space-y-5 p-6 sm:p-8">
+        {framing ? (
+          <PictureFramer
+            file={framing}
+            onCancel={() => setFraming(null)}
+            onDone={(dataUrl) => {
+              setImage(dataUrl)
+              setFraming(null)
+            }}
+          />
+        ) : null}
         {imageError ? (
           <p role="alert" className="text-sm font-semibold text-negative">
             {imageError}
