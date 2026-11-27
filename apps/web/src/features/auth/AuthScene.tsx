@@ -162,7 +162,7 @@ export function AuthScene({ verbs, headlineLabel, secondLine, intro, headerLink,
 
         <section
           aria-labelledby={cardLabelledBy}
-          className="tile-in relative -mx-5 mt-auto rounded-t-[28px] bg-stone-50/97 p-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] text-foreground shadow-[0_-20px_60px_-20px_rgb(0_0_0/0.5)] backdrop-blur-xl sm:-mx-8 sm:p-8 lg:mx-0 lg:mt-0 lg:mb-8 lg:rounded-[28px] lg:shadow-[0_40px_80px_-30px_rgb(0_0_0/0.65),inset_0_1px_0_rgb(255_255_255/0.8)]"
+          className="tile-in relative -mx-5 mt-auto rounded-t-[28px] bg-[#f1ebe5]/97 p-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] text-foreground shadow-[0_-20px_60px_-20px_rgb(0_0_0/0.5)] backdrop-blur-xl sm:-mx-8 sm:p-8 lg:mx-0 lg:mt-0 lg:mb-8 lg:rounded-[28px] lg:shadow-[0_40px_80px_-30px_rgb(0_0_0/0.65),inset_0_1px_0_rgb(255_255_255/0.8)]"
         >
           <div className="mx-auto mb-5 h-1 w-10 rounded-full bg-stone-200 lg:hidden" aria-hidden="true" />
           {children}
