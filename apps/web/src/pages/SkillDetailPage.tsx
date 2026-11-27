@@ -101,7 +101,7 @@ export function SkillDetailPage() {
                 onClick={() => setSaved((s) => !s)}
                 className="press grid size-11 shrink-0 place-items-center rounded-full bg-white/92 text-wine-700 shadow-card transition-transform duration-200 hover:scale-105"
               >
-                <Heart className={cn('size-[18px]', saved && 'fill-wine-700')} aria-hidden="true" />
+                <Heart className={cn('size-[18px]', saved && 'fill-negative text-negative')} aria-hidden="true" />
               </button>
             </div>
 
