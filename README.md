@@ -100,8 +100,3 @@ This checks that every balance equals the sum of its ledger rows and that every 
 - **Trust and badges:** a trust score from ratings, reliability and experience, and six badges awarded by rule.
 - **Admin:** overview numbers, suspend and reactivate members, manage skill categories, moderate reported skills and reviews (with restore), change starter credit and matching settings. Every admin action is written to an audit log.
 - **Phone friendly:** responsive layout with a bottom navigation bar, camera or file photo upload, and an installable PWA shell.
-
-## Notes
-
-- `apps/api/.env` holds secrets and is git-ignored. Never commit it.
-- Demo reset links and reset emails are written to `apps/api/storage/logs/laravel.log` in development (mail uses the log driver).
